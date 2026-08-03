@@ -1,0 +1,57 @@
+import prisma from "../config/prisma.js";
+
+export const loanTypeRepository = {
+  create(data) {
+    return prisma.loanType.create({
+      data,
+    });
+  },
+
+  findById(id) {
+    return prisma.loanType.findUnique({
+      where: {
+        id,
+      },
+    });
+  },
+
+  findByCode(code) {
+    return prisma.loanType.findUnique({
+      where: {
+        code,
+      },
+    });
+  },
+
+  findAll() {
+    return prisma.loanType.findMany({
+      where: {
+        isDeleted: false,
+      },
+      orderBy: {
+        displayOrder: "asc",
+      },
+    });
+  },
+
+  update(id, data) {
+    return prisma.loanType.update({
+      where: {
+        id,
+      },
+      data,
+    });
+  },
+
+  softDelete(id) {
+    return prisma.loanType.update({
+      where: {
+        id,
+      },
+      data: {
+        isDeleted: true,
+        isActive: false,
+      },
+    });
+  },
+};
