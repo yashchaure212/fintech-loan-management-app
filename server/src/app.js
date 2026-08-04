@@ -11,6 +11,7 @@ import loanWorkflowRoutes from "./routes/loanWorkflow.routes.js";
 import loanInterestConfigurationRoutes from "./routes/loanInterestConfiguration.routes.js";
 import loanEligibilityRoutes from "./routes/loanEligibility.routes.js";
 import loanRequiredDocumentRoutes from "./routes/loanRequiredDocument.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 
 import { errorHandler } from "./middlewares/error.middleware.js";
 
@@ -30,6 +31,7 @@ app.use("/api/v1/loan-workflow", loanWorkflowRoutes);
 app.use("/api/loan-interest-configurations", loanInterestConfigurationRoutes);
 app.use("/api/loan-eligibilities", loanEligibilityRoutes);
 app.use("/api/loan-required-documents", loanRequiredDocumentRoutes);
+app.use("/api/v1/dashboard", dashboardRoutes);
 
 app.use(errorHandler);
 
