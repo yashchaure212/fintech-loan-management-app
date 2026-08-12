@@ -86,32 +86,42 @@ function Login() {
   };
 
   return (
-    <div
-      className="
-      min-h-screen
-      flex
-      items-center
-      justify-center
-      px-4
-    "
-    >
-      <Card
-        className="
-        w-full
-        max-w-md
-      "
-      >
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-        </CardHeader>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,hsl(var(--primary-soft)),transparent_34rem)] px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl overflow-hidden rounded-[2rem] border border-border/70 bg-card shadow-floating lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="relative hidden overflow-hidden bg-brand-gradient p-10 text-white lg:flex lg:flex-col lg:justify-between">
+          <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-cyan-300/15 blur-3xl" />
+          <div className="relative">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 font-bold ring-1 ring-white/20">L</span>
+              <div><p className="font-bold">LoanPro</p><p className="text-xs text-white/70">Digital lending platform</p></div>
+            </div>
+            <div className="mt-20 max-w-md">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-100">Education finance</p>
+              <h1 className="mt-4 text-4xl font-bold leading-tight text-white">A simpler way to move your loan application forward.</h1>
+              <p className="mt-5 text-base leading-7 text-white/75">Apply online, upload documents, follow every stage and stay in control of your application.</p>
+            </div>
+          </div>
+          <div className="relative grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur"><p className="text-xs text-white/65">Digital</p><p className="mt-1 font-semibold">Application journey</p></div>
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur"><p className="text-xs text-white/65">Secure</p><p className="mt-1 font-semibold">Document handling</p></div>
+          </div>
+        </div>
 
-        <CardContent>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="
-              space-y-5
-            "
-          >
+        <div className="flex items-center justify-center p-5 sm:p-10">
+          <div className="w-full max-w-md">
+            <div className="mb-8 lg:hidden">
+              <Link to="/" className="inline-flex items-center gap-2.5">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-gradient font-bold text-white shadow-brand">L</span>
+                <span><span className="block font-bold">LoanPro</span><span className="block text-xs text-muted-foreground">Digital lending platform</span></span>
+              </Link>
+            </div>
+            <div className="mb-8">
+              <span className="section-eyebrow">Secure account access</span>
+              <h1 className="mt-4 text-3xl font-bold">Welcome back</h1>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">Continue your loan journey from where you left off.</p>
+            </div>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <AuthInput
               label="Phone Number"
               name="phone"
@@ -128,30 +138,15 @@ function Login() {
               register={register}
               error={errors.password}
             />
-
-            <Button
-              className="
-                w-full
-              "
-              disabled={isLoading}
-            >
-              {isLoading ? "Logging in..." : "Login"}
-            </Button>
-
-            <p className="text-sm text-center text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link
-                to="/register"
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                Sign up
-              </Link>
-            </p>
-          </form>
-        </CardContent>
-      </Card>
+              <Button className="mt-2 w-full" size="xl" disabled={isLoading}>{isLoading ? "Logging in..." : "Login"}</Button>
+              <p className="text-center text-sm text-muted-foreground">Don&apos;t have an account? <Link to="/register" className="font-semibold text-primary hover:underline">Sign up</Link></p>
+            </form>
+          </div>
+        </div>
+      </div>
     </div>
   );
+
 }
 
 export default Login;

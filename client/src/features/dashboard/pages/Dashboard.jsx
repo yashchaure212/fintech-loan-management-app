@@ -1,3 +1,4 @@
+import { ArrowRight, CheckCircle2, Clock3, FileText, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,13 +10,11 @@ import { useGetCustomerDashboardQuery } from "../dashboardApi";
 
 function formatCurrency(value) {
   if (value == null) return "₹0";
-
   return `₹${Number(value).toLocaleString("en-IN")}`;
 }
 
 function formatDate(value) {
   if (!value) return "-";
-
   return new Date(value).toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -25,230 +24,175 @@ function formatDate(value) {
 
 function Dashboard() {
   const navigate = useNavigate();
-
   const { data, isLoading, isError } = useGetCustomerDashboardQuery();
-
   const dashboard = data?.data;
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="space-y-2">
-          <div className="h-7 w-40 animate-pulse rounded-md bg-muted" />
-          <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
+        <div className="page-header-card animate-pulse">
+          <div className="h-5 w-32 rounded bg-muted" />
+          <div className="mt-3 h-8 w-64 rounded bg-muted" />
+          <div className="mt-3 h-4 w-80 rounded bg-muted" />
         </div>
-        <div className="h-36 animate-pulse rounded-xl border bg-card" />
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[1, 2, 3, 4].map((item) => (
-            <div
-              key={item}
-              className="h-20 animate-pulse rounded-lg border bg-card"
-            />
-          ))}
-        </div>
+        <div className="h-56 animate-pulse rounded-2xl bg-card" />
       </div>
     );
   }
 
   if (isError || !dashboard) {
     return (
-      <div className="rounded-xl border bg-card p-6">
-        <h1 className="page-title">Unable to load dashboard</h1>
-        <p className="mt-2 text-helper">
-          Please refresh the page and try again.
-        </p>
+      <div className="page-header-card">
+        <span className="section-eyebrow">Dashboard</span>
+        <h1 className="page-title mt-4">Unable to load dashboard</h1>
+        <p className="mt-2 text-helper">Please refresh the page and try again.</p>
       </div>
     );
   }
 
   const recentApplications = dashboard.recentApplications || [];
   const emiDue = dashboard.nextEmi?.amount ?? 0;
+  const profileCompletion = Number(dashboard.profileCompletion || 0);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="page-title">Dashboard</h1>
-          <p className="mt-1 text-helper">
-            Track your loans, EMI, and applications.
-          </p>
-        </div>
-
-        <Button
-          className="w-full sm:w-auto"
-          onClick={() => navigate("/customer/loans/apply")}
-        >
-          Apply for a loan
-        </Button>
-      </div>
-
-      <Card>
-        <CardContent className="space-y-5 p-5 sm:p-6">
+      <section className="page-header-card">
+        <div className="relative z-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="section-title">Loan overview</h2>
-            <p className="mt-1 text-helper">
-              Your current borrowing and repayment position.
+            <span className="section-eyebrow">Customer portal</span>
+            <h1 className="page-title mt-4">Your loan journey, in one place.</h1>
+            <p className="mt-2 max-w-2xl text-helper">
+              Track applications, review your loan position and take the next required action.
             </p>
           </div>
+          <Button className="w-full sm:w-auto" size="lg" onClick={() => navigate("/customer/loans/apply")}>
+            Apply for a loan <ArrowRight />
+          </Button>
+        </div>
+      </section>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <p className="financial-label">Total borrowed</p>
-              <p className="financial-value mt-1">
-                {formatCurrency(dashboard.totalBorrowed)}
-              </p>
-            </div>
-
-            <div>
-              <p className="financial-label">Outstanding</p>
-              <p className="financial-value mt-1">
-                {formatCurrency(dashboard.totalOutstanding)}
-              </p>
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          <div className="bg-brand-gradient p-5 text-white sm:p-7">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/65">Loan overview</p>
+                <p className="mt-2 text-3xl font-bold tracking-tight">{formatCurrency(dashboard.totalOutstanding)}</p>
+                <p className="mt-1 text-sm text-white/70">Current outstanding balance</p>
+              </div>
+              <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+                <p className="text-xs text-white/65">Total borrowed</p>
+                <p className="mt-1 text-lg font-semibold">{formatCurrency(dashboard.totalBorrowed)}</p>
+              </div>
             </div>
           </div>
 
-          <Separator />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
+          <div className="grid divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            <div className="p-5">
               <p className="financial-label">Next EMI</p>
-              <p className="mt-1 text-base font-semibold tabular-nums">
-                {formatCurrency(emiDue)}
+              <p className="financial-value mt-1">{formatCurrency(emiDue)}</p>
+              <p className="mt-1 text-caption">
+                {dashboard.nextEmi?.dueDate ? `Due ${formatDate(dashboard.nextEmi.dueDate)}` : "No EMI due right now"}
               </p>
-              {dashboard.nextEmi?.dueDate ? (
-                <p className="mt-1 text-caption">
-                  Due {formatDate(dashboard.nextEmi.dueDate)}
-                </p>
-              ) : (
-                <p className="mt-1 text-caption">No EMI due right now</p>
-              )}
               {emiDue > 0 ? (
-                <Button
-                  variant="link"
-                  className="mt-1 h-auto p-0"
-                  onClick={() => navigate("/customer/payments")}
-                >
-                  Pay now
+                <Button variant="link" className="mt-2 h-auto p-0" onClick={() => navigate("/customer/payments")}>
+                  Pay now <ArrowRight />
                 </Button>
               ) : null}
             </div>
-
-            <div>
+            <div className="p-5">
               <p className="financial-label">Active loans</p>
-              <p className="mt-1 text-base font-semibold tabular-nums">
-                {dashboard.activeLoans}
-              </p>
-              <p className="mt-1 text-caption">
-                {dashboard.pendingApplications} pending application
-                {dashboard.pendingApplications === 1 ? "" : "s"}
-              </p>
+              <p className="financial-value mt-1">{dashboard.activeLoans}</p>
+              <p className="mt-1 text-caption">Currently active</p>
+            </div>
+            <div className="p-5">
+              <p className="financial-label">Pending applications</p>
+              <p className="financial-value mt-1">{dashboard.pendingApplications}</p>
+              <p className="mt-1 text-caption">Need review or completion</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Metric label="Profile complete" value={`${dashboard.profileCompletion}%`} />
-        <Metric label="Active loans" value={String(dashboard.activeLoans)} />
-        <Metric
-          label="Pending apps"
-          value={String(dashboard.pendingApplications)}
-        />
-        <Metric label="EMI due" value={formatCurrency(emiDue)} />
+      <section className="grid gap-4 md:grid-cols-3">
+        <QuickCard icon={FileText} title="My loans" description="Review your applications and loan details." onClick={() => navigate("/customer/loans")} />
+        <QuickCard icon={Wallet} title="Payments" description="View EMI schedules and pending payments." onClick={() => navigate("/customer/payments")} />
+        <QuickCard icon={CheckCircle2} title="Profile" description={`Your profile is ${profileCompletion}% complete.`} onClick={() => navigate("/customer/profile")} />
       </section>
 
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Button
-          variant="outline"
-          className="w-full sm:w-auto"
-          onClick={() => navigate("/customer/profile")}
-        >
-          Complete profile
-        </Button>
-
-        <Button
-          variant="outline"
-          className="w-full sm:w-auto"
-          onClick={() => navigate("/customer/loans")}
-        >
-          View my loans
-        </Button>
-
-        {emiDue > 0 ? (
-          <Button
-            className="w-full sm:w-auto"
-            onClick={() => navigate("/customer/payments")}
-          >
-            Pay EMI
-          </Button>
-        ) : null}
-      </div>
+      <Card>
+        <CardContent className="p-5 sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="section-title">Application progress</p>
+              <p className="mt-1 text-helper">Keep your profile and documents ready for a smoother review.</p>
+            </div>
+            <Button variant="outline" onClick={() => navigate("/customer/profile")}>Complete profile</Button>
+          </div>
+          <div className="mt-5 h-2 overflow-hidden rounded-full bg-muted">
+            <div className="h-full rounded-full bg-brand-gradient" style={{ width: `${Math.min(100, Math.max(0, profileCompletion))}%` }} />
+          </div>
+          <div className="mt-2 flex justify-between text-caption">
+            <span>Profile completion</span><span>{profileCompletion}%</span>
+          </div>
+        </CardContent>
+      </Card>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="section-title">Recent applications</h2>
-
-          {recentApplications.length > 0 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/customer/loans")}
-            >
-              View all
-            </Button>
-          ) : null}
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <p className="section-title">Recent applications</p>
+            <p className="mt-1 text-helper">Your latest loan activity.</p>
+          </div>
+          {recentApplications.length > 0 ? <Button variant="ghost" size="sm" onClick={() => navigate("/customer/loans")}>View all</Button> : null}
         </div>
 
         {recentApplications.length === 0 ? (
-          <div className="rounded-xl border border-dashed bg-card p-6 text-center">
-            <p className="text-sm font-medium">No applications yet</p>
-            <p className="mt-1 text-helper">
-              Start an education loan application when you are ready.
-            </p>
+          <div className="rounded-2xl border border-dashed bg-card p-8 text-center">
+            <Clock3 className="mx-auto h-8 w-8 text-muted-foreground" />
+            <p className="mt-3 text-sm font-semibold">No applications yet</p>
+            <p className="mt-1 text-helper">Start an education loan application when you are ready.</p>
+            <Button className="mt-5" onClick={() => navigate("/customer/loans/apply")}>Start application</Button>
           </div>
         ) : (
-          <div className="divide-y rounded-xl border bg-card">
-            {recentApplications.map((application) => (
-              <button
-                key={application.id}
-                type="button"
-                className="flex w-full flex-col gap-2 px-4 py-4 text-left transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between"
-                onClick={() => {
-                  if (application.status === "DRAFT") {
-                    navigate(`/customer/loans/${application.id}/edit`);
-                    return;
-                  }
-
-                  navigate(`/customer/loans/${application.id}`);
-                }}
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">
-                    {application.loanType?.name || "Loan Application"}
-                  </p>
-                  <p className="mt-0.5 text-caption">
-                    {application.applicationNumber || "Draft application"}
-                  </p>
-                </div>
-
-                <StatusBadge status={application.status} type="loan" />
-              </button>
-            ))}
-          </div>
+          <Card className="overflow-hidden">
+            <CardContent className="p-0">
+              {recentApplications.map((application, index) => (
+                <button
+                  key={application.id}
+                  type="button"
+                  className="flex w-full flex-col gap-3 border-b px-5 py-4 text-left transition-colors last:border-b-0 hover:bg-muted/35 sm:flex-row sm:items-center sm:justify-between"
+                  onClick={() => application.status === "DRAFT" ? navigate(`/customer/loans/${application.id}/edit`) : navigate(`/customer/loans/${application.id}`)}
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">{index + 1}</span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">{application.loanType?.name || "Loan Application"}</p>
+                      <p className="mt-0.5 text-caption">{application.applicationNumber || "Draft application"}</p>
+                    </div>
+                  </div>
+                  <StatusBadge status={application.status} type="loan" />
+                </button>
+              ))}
+            </CardContent>
+          </Card>
         )}
       </section>
     </div>
   );
 }
 
-function Metric({ label, value }) {
+function QuickCard({ icon: Icon, title, description, onClick }) {
   return (
-    <div className="rounded-lg border bg-card px-3 py-3 sm:px-4 sm:py-4">
-      <p className="text-caption">{label}</p>
-      <p className="mt-1 text-sm font-semibold tabular-nums sm:text-base">
-        {value}
-      </p>
-    </div>
+    <button type="button" onClick={onClick} className="app-card app-card-hover group flex w-full items-start gap-4 p-5 text-left">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-bold">{title}</span>
+        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
+      </span>
+    </button>
   );
 }
 

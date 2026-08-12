@@ -16,7 +16,7 @@ const menu = [
 
 function AdminSidebar() {
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-border bg-card lg:block">
+    <aside className="hidden w-64 shrink-0 border-r border-border bg-card lg:block shadow-[8px_0_30px_rgba(15,23,42,0.025)]">
       <div className="sticky top-16 flex h-[calc(100vh-4rem)] flex-col">
         <nav className="flex-1 space-y-1 p-4">
           <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -64,7 +64,7 @@ function AdminSidebar() {
         </nav>
 
         <div className="border-t border-border p-4">
-          <div className="rounded-lg bg-muted/60 p-3">
+          <div className="rounded-2xl border border-primary/10 bg-primary-soft p-4">
             <p className="text-xs font-semibold">Admin workspace</p>
 
             <p className="mt-1 text-xs text-muted-foreground">

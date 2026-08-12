@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
 const cardVariants = cva(
   [
     "group/card flex flex-col gap-0 overflow-hidden",
-    "rounded-xl border border-border/80",
+    "rounded-2xl border border-border/80",
     "bg-card text-sm text-card-foreground",
     "shadow-[var(--shadow-card)]",
+    "transition-shadow duration-200",
     "data-[size=sm]:rounded-lg",
     "has-[>img:first-child]:pt-0",
     "[&>img:first-child]:rounded-t-xl",
@@ -17,7 +18,7 @@ const cardVariants = cva(
   {
     variants: {
       interactive: {
-        true: "cursor-pointer transition-shadow hover:shadow-[var(--shadow-md)]",
+        true: "cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[var(--shadow-lg)]",
         false: "",
       },
     },

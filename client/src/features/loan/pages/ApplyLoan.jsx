@@ -14,7 +14,7 @@ import {
   useGetLoanApplicationQuery,
 } from "../api/loanApi";
 
-import { LoanWizardStepper } from "../components/LoanWizardShell";
+import { ApplicationContextPanel, LoanWizardStepper } from "../components/LoanWizardShell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -431,66 +431,72 @@ function ApplyLoan() {
         completionPercentage={completionPercentage}
       />
 
-      {/* ==================================================
-          STEP 1
-      ================================================== */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        <div className="min-w-0">
+          {/* ==================================================
+              STEP 1
+          ================================================== */}
 
-      {currentStep === 1 && (
-        <LoanDetailsStep
-          onNext={handleLoanDetails}
-          isSubmitting={isSaving}
-          initialData={loanApplication}
-          isEditMode={isEditMode}
-        />
-      )}
+          {currentStep === 1 && (
+            <LoanDetailsStep
+              onNext={handleLoanDetails}
+              isSubmitting={isSaving}
+              initialData={loanApplication}
+              isEditMode={isEditMode}
+            />
+          )}
 
-      {/* ==================================================
-          STEP 2
-      ================================================== */}
+          {/* ==================================================
+              STEP 2
+          ================================================== */}
 
-      {currentStep === 2 && loanApplication?.id && (
-        <EducationDetailsStep
-          loanApplicationId={loanApplication.id}
-          onBack={handleBackToLoanDetails}
-          onNext={handleEducationNext}
-        />
-      )}
+          {currentStep === 2 && loanApplication?.id && (
+            <EducationDetailsStep
+              loanApplicationId={loanApplication.id}
+              onBack={handleBackToLoanDetails}
+              onNext={handleEducationNext}
+            />
+          )}
 
-      {/* ==================================================
-          STEP 3
-      ================================================== */}
+          {/* ==================================================
+              STEP 3
+          ================================================== */}
 
-      {currentStep === 3 && loanApplication?.id && (
-        <ParentDetailsStep
-          loanApplicationId={loanApplication.id}
-          onBack={handleBackToEducation}
-          onNext={handleParentNext}
-        />
-      )}
+          {currentStep === 3 && loanApplication?.id && (
+            <ParentDetailsStep
+              loanApplicationId={loanApplication.id}
+              onBack={handleBackToEducation}
+              onNext={handleParentNext}
+            />
+          )}
 
-      {/* ==================================================
-          STEP 4
-      ================================================== */}
+          {/* ==================================================
+              STEP 4
+          ================================================== */}
 
-      {currentStep === 4 && loanApplication?.id && (
-        <DocumentsStep
-          loanApplicationId={loanApplication.id}
-          onBack={handleBackToParent}
-          onNext={handleDocumentsNext}
-        />
-      )}
+          {currentStep === 4 && loanApplication?.id && (
+            <DocumentsStep
+              loanApplicationId={loanApplication.id}
+              onBack={handleBackToParent}
+              onNext={handleDocumentsNext}
+            />
+          )}
 
-      {/* ==================================================
-          STEP 5
-      ================================================== */}
+          {/* ==================================================
+              STEP 5
+          ================================================== */}
 
-      {currentStep === 5 && loanApplication?.id && (
-        <ReviewSubmitStep
-          loanApplication={loanApplication}
-          loanApplicationId={loanApplication.id}
-          onBack={handleBackToDocuments}
-        />
-      )}
+          {currentStep === 5 && loanApplication?.id && (
+            <ReviewSubmitStep
+              loanApplication={loanApplication}
+              loanApplicationId={loanApplication.id}
+              onBack={handleBackToDocuments}
+            />
+          )}
+        </div>
+
+        <ApplicationContextPanel currentStep={currentStep} totalSteps={TOTAL_STEPS} />
+      </div>
     </div>
   );
 }

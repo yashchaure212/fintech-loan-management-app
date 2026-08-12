@@ -2,7 +2,7 @@ import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-function ApplyNowButton({ className = "" }) {
+function ApplyNowButton({ className = "", children = "Apply Now" }) {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
   const destination =
@@ -12,7 +12,7 @@ function ApplyNowButton({ className = "" }) {
 
   return (
     <Link to={destination} className={className}>
-      <span>Apply Now</span>
+      <span>{children}</span>
       <ArrowRight className="h-4 w-4" />
     </Link>
   );

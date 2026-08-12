@@ -51,7 +51,8 @@ function SheetContent({
         data-slot="sheet-content"
         data-side={side}
         className={cn(
-          "fixed z-50 flex flex-col border-border bg-card text-sm text-card-foreground shadow-[var(--shadow-lg)]",
+          "fixed z-50 flex flex-col border-border text-sm text-card-foreground shadow-[var(--shadow-lg)]",
+          "bg-[hsl(var(--card))]",
           "transition duration-200 ease-out",
           "data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:border-t",
           "data-[side=bottom]:max-h-[90vh]",

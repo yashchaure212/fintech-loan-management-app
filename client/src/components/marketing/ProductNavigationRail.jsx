@@ -2,154 +2,102 @@ import {
   Calculator,
   CheckCircle2,
   FileText,
-  GraduationCap,
-  MapPinned,
-  Sparkles,
+  Headphones,
+  ArrowUpRight,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import { loanCatalog, loanTone } from "./loanCatalog";
+
 const items = [
+  ...loanCatalog.slice(0, 2).map((loan) => ({
+    ...loan,
+    label: loan.name,
+    description: loan.id === "education" ? "Higher education finance" : "International education",
+  })),
   {
-    label: "Education Loan",
-    description: "Finance higher education",
-    icon: GraduationCap,
-    tone: "education",
-    href: "#loan-products",
-  },
-  {
-    label: "Study Abroad",
-    description: "Plan international education",
-    icon: MapPinned,
-    tone: "abroad",
-    href: "#loan-products",
-  },
-  {
+    id: "emi",
     label: "EMI Calculator",
-    description: "Estimate your repayment",
+    description: "Estimate repayment",
     icon: Calculator,
-    tone: "calculator",
     href: "/emi-calculator",
+    tone: "cyan",
   },
   {
+    id: "eligibility",
     label: "Check Eligibility",
-    description: "Review before applying",
+    description: "Prepare before applying",
     icon: CheckCircle2,
-    tone: "eligibility",
     href: "#eligibility",
+    tone: "green",
   },
   {
+    id: "process",
     label: "How It Works",
-    description: "Understand the process",
+    description: "Understand the journey",
     icon: FileText,
-    tone: "process",
     href: "#how-it-works",
+    tone: "blue",
   },
   {
-    label: "What's New",
-    description: "Latest platform updates",
-    icon: Sparkles,
-    tone: "offers",
-    href: "#featured-services",
+    id: "support",
+    label: "Support",
+    description: "Find answers",
+    icon: Headphones,
+    href: "#faq",
+    tone: "orange",
   },
 ];
-
-const toneClasses = {
-  education: {
-    icon: "bg-blue-100 text-blue-700",
-    hover: "hover:border-blue-200 hover:bg-blue-50",
-  },
-  abroad: {
-    icon: "bg-violet-100 text-violet-700",
-    hover: "hover:border-violet-200 hover:bg-violet-50",
-  },
-  calculator: {
-    icon: "bg-cyan-100 text-cyan-700",
-    hover: "hover:border-cyan-200 hover:bg-cyan-50",
-  },
-  eligibility: {
-    icon: "bg-emerald-100 text-emerald-700",
-    hover: "hover:border-emerald-200 hover:bg-emerald-50",
-  },
-  process: {
-    icon: "bg-amber-100 text-amber-700",
-    hover: "hover:border-amber-200 hover:bg-amber-50",
-  },
-  offers: {
-    icon: "bg-orange-100 text-orange-700",
-    hover: "hover:border-orange-200 hover:bg-orange-50",
-  },
-};
 
 function ProductNavigationRail() {
   return (
     <section className="border-b border-border bg-card">
       <div className="mx-auto max-w-[1440px] px-4 py-3 sm:px-6 lg:px-8">
-        <div
-          className="
-            flex gap-3 overflow-x-auto
-            pb-1
-            scrollbar-none
-          "
-        >
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {items.map((item) => {
             const Icon = item.icon;
-            const tone = toneClasses[item.tone];
+            const colors = loanTone[item.tone] || loanTone.blue;
 
             const content = (
               <>
-                <span
-                  className={[
-                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
-                    tone.icon,
-                  ].join(" ")}
-                >
-                  <Icon className="h-5 w-5" />
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${colors.icon}`}>
+                  <Icon className="h-4.5 w-4.5" />
                 </span>
 
                 <span className="min-w-0 text-left">
-                  <span className="block whitespace-nowrap text-sm font-semibold text-foreground">
+                  <span className="block whitespace-nowrap text-xs font-semibold text-foreground sm:text-sm">
                     {item.label}
                   </span>
-
                   <span className="mt-0.5 block whitespace-nowrap text-[11px] text-muted-foreground">
                     {item.description}
                   </span>
                 </span>
+
+                <ArrowUpRight className="ml-auto hidden h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-px group-hover:translate-x-px sm:block" />
               </>
             );
 
-            if (item.href.startsWith("#")) {
+            const className =
+              "group flex min-w-[190px] shrink-0 items-center gap-3 rounded-xl border border-border bg-background px-3 py-3 transition-all duration-200 hover:-translate-y-px hover:border-primary/20 hover:bg-primary-soft/35 hover:shadow-sm sm:min-w-[205px]";
+
+            if (item.href.startsWith("/")) {
               return (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className={[
-                    "flex min-w-[205px] shrink-0 items-center gap-3",
-                    "rounded-xl border border-border bg-background px-3 py-3",
-                    "transition-all duration-200",
-                    tone.hover,
-                  ].join(" ")}
-                >
+                <Link key={item.id} to={item.href} className={className}>
                   {content}
-                </a>
+                </Link>
               );
             }
 
             return (
-              <Link
-                key={item.label}
-                to={item.href}
-                className={[
-                  "flex min-w-[205px] shrink-0 items-center gap-3",
-                  "rounded-xl border border-border bg-background px-3 py-3",
-                  "transition-all duration-200",
-                  tone.hover,
-                ].join(" ")}
-              >
+              <a key={item.id} href={item.href} className={className}>
                 {content}
-              </Link>
+              </a>
             );
           })}
+
+          <span className="hidden shrink-0 px-2 text-[11px] font-medium text-muted-foreground xl:inline">
+            More products can be added as they become available
+          </span>
         </div>
       </div>
     </section>

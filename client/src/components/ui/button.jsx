@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const buttonVariants = cva(
   [
     "inline-flex shrink-0 items-center justify-center",
-    "rounded-lg border border-transparent",
+    "rounded-xl border border-transparent",
     "text-sm font-medium whitespace-nowrap",
     "transition-colors duration-200",
     "outline-none select-none",
@@ -24,7 +24,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover",
+          "bg-primary text-primary-foreground shadow-sm shadow-primary/15 hover:bg-primary-hover hover:shadow-brand",
 
         outline:
           "border-border bg-card text-foreground hover:border-primary/30 hover:bg-primary-soft hover:text-primary",

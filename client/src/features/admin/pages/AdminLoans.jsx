@@ -58,7 +58,7 @@ function AdminLoans() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="page-header-card">
         <h1 className="page-title">Loan applications</h1>
         <p className="mt-1 text-helper">
           Review and process submitted education loan applications.

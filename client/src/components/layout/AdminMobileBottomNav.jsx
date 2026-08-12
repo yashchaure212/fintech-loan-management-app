@@ -8,7 +8,7 @@ const items = [
 
 function AdminMobileBottomNav() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
       <div className="grid h-16 grid-cols-2">
         {items.map((item) => {
           const Icon = item.icon;
