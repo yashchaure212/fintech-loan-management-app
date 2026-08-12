@@ -33,7 +33,9 @@ export const emiRepository = {
   findPendingByUser(userId) {
     return prisma.emiSchedule.findMany({
       where: {
-        status: "PENDING",
+        status: {
+          in: ["PENDING", "PARTIALLY_PAID", "OVERDUE"],
+        },
         loanApplication: {
           userId,
         },
@@ -62,5 +64,16 @@ export const emiRepository = {
 
   transaction(callback) {
     return prisma.$transaction(callback);
+  },
+
+  hasSchedule(loanApplicationId) {
+    return prisma.emiSchedule.findFirst({
+      where: {
+        loanApplicationId,
+      },
+      select: {
+        id: true,
+      },
+    });
   },
 };

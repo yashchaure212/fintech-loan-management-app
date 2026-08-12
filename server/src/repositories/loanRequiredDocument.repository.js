@@ -42,11 +42,29 @@ export const loanRequiredDocumentRepository = {
     });
   },
 
-  findByLoanTypeAndDocumentType(loanTypeId, documentType) {
+  findByLoanType(loanTypeId) {
+    return prisma.loanRequiredDocument.findMany({
+      where: {
+        loanTypeId,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+  },
+
+  findDuplicate({
+    loanTypeId,
+    documentType,
+    ownerType,
+    employmentType = null,
+  }) {
     return prisma.loanRequiredDocument.findFirst({
       where: {
         loanTypeId,
         documentType,
+        ownerType,
+        employmentType: employmentType ?? null,
       },
     });
   },

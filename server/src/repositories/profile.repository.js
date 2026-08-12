@@ -4,9 +4,6 @@ export const profileRepository = {
   createProfile(data) {
     return prisma.customerProfile.create({
       data,
-      include: {
-        user: true,
-      },
     });
   },
 
@@ -14,10 +11,6 @@ export const profileRepository = {
     return prisma.customerProfile.findUnique({
       where: {
         userId,
-      },
-
-      include: {
-        user: true,
       },
     });
   },
@@ -29,10 +22,6 @@ export const profileRepository = {
       },
 
       data,
-
-      include: {
-        user: true,
-      },
     });
   },
 };

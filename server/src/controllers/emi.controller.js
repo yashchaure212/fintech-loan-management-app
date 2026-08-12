@@ -3,7 +3,10 @@ import { emiService } from "../services/emi.service.js";
 export const emiController = {
   async getLoanSchedule(req, res, next) {
     try {
-      const result = await emiService.getLoanSchedule(req.params.loanId);
+      const result = await emiService.getLoanSchedule(
+        req.params.loanId,
+        req.user.id,
+      );
 
       res.status(200).json({
         success: true,
@@ -16,7 +19,7 @@ export const emiController = {
 
   async getById(req, res, next) {
     try {
-      const result = await emiService.getById(req.params.id);
+      const result = await emiService.getById(req.params.id, req.user.id);
 
       res.status(200).json({
         success: true,

@@ -9,14 +9,16 @@ export const profileService = {
       throw new AppError("Profile already exists", 409);
     }
 
-    if (data.dateOfBirth) {
-      data.dateOfBirth = new Date(data.dateOfBirth);
-    }
+    const profileData = {
+      ...data,
+      ...(data.dateOfBirth && {
+        dateOfBirth: new Date(data.dateOfBirth),
+      }),
+    };
 
     return profileRepository.createProfile({
       userId,
-
-      ...data,
+      ...profileData,
     });
   },
 
@@ -31,6 +33,24 @@ export const profileService = {
   },
 
   async updateProfile(userId, data) {
-    return profileRepository.updateProfile(userId, data);
+    const existingProfile = await profileRepository.findProfileByUserId(userId);
+
+    const profileData = {
+      ...data,
+      ...(data.dateOfBirth && {
+        dateOfBirth: new Date(data.dateOfBirth),
+      }),
+    };
+
+    // No profile yet → create it
+    if (!existingProfile) {
+      return profileRepository.createProfile({
+        userId,
+        ...profileData,
+      });
+    }
+
+    // Profile exists → update it
+    return profileRepository.updateProfile(userId, profileData);
   },
 };

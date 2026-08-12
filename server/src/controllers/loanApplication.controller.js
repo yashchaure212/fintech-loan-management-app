@@ -7,7 +7,7 @@ export const loanApplicationController = {
 
       return res.status(201).json({
         success: true,
-        message: "Loan application created successfully",
+        message: "Loan application draft created successfully",
         data: result,
       });
     } catch (error) {
@@ -32,10 +32,48 @@ export const loanApplicationController = {
 
   async getById(req, res, next) {
     try {
-      const result = await loanApplicationService.getById(req.params.id);
+      const result = await loanApplicationService.getById(
+        req.user.id,
+        req.params.id,
+      );
 
       return res.status(200).json({
         success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateDraft(req, res, next) {
+    try {
+      const result = await loanApplicationService.updateDraft(
+        req.user.id,
+        req.params.id,
+        req.body,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Loan application draft updated successfully",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async submit(req, res, next) {
+    try {
+      const result = await loanApplicationService.submit(
+        req.user.id,
+        req.params.id,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Loan application submitted successfully",
         data: result,
       });
     } catch (error) {

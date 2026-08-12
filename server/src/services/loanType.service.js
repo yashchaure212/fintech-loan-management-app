@@ -17,6 +17,11 @@ export const loanTypeService = {
     return loanTypeRepository.findAll();
   },
 
+  // Customer-facing: active loan products only
+  async getActive() {
+    return loanTypeRepository.findAllActive();
+  },
+
   async getById(id) {
     const loanType = await loanTypeRepository.findById(id);
 
@@ -66,5 +71,19 @@ export const loanTypeService = {
     }
 
     return loanTypeRepository.softDelete(id);
+  },
+
+  async getPublic() {
+    return loanTypeRepository.findAllActive();
+  },
+
+  async getPublicById(id) {
+    const loanType = await loanTypeRepository.findActiveById(id);
+
+    if (!loanType) {
+      throw new AppError("Loan type not found", 404);
+    }
+
+    return loanType;
   },
 };

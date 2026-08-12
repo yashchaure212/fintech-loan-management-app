@@ -1,10 +1,13 @@
 import prisma from "../config/prisma.js";
 
 export const emiPaymentRepository = {
-  findEmiById(id) {
-    return prisma.emiSchedule.findUnique({
+  findEmiById(id, userId) {
+    return prisma.emiSchedule.findFirst({
       where: {
         id,
+        loanApplication: {
+          userId,
+        },
       },
       include: {
         payments: true,
@@ -32,9 +35,8 @@ export const emiPaymentRepository = {
     return tx.emiSchedule.count({
       where: {
         loanApplicationId,
-
         status: {
-          not: "PAID",
+          in: ["PENDING", "PARTIALLY_PAID", "OVERDUE"],
         },
       },
     });

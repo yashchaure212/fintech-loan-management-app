@@ -1,15 +1,14 @@
 import cloudinary from "../config/cloudinary.js";
 
-export const uploadFile = async (file) => {
+export const uploadFile = async (file, folder = "fintech/kyc") => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader
       .upload_stream(
         {
-          folder: "fintech/kyc",
+          folder,
+          resource_type: "auto",
         },
         (error, result) => {
-          console.log("Cloudinary Error:", error);
-          console.log("Cloudinary Result:", result);
           if (error) {
             return reject(error);
           }

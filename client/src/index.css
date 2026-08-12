@@ -1,130 +1,600 @@
 @import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
 
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
-}
-
-:root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-}
-
-.dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
-}
+/* =========================================================
+   LOANPRO — FINTECH DESIGN SYSTEM
+   Premium financial-services foundation
+   ========================================================= */
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
-    }
-  body {
-    @apply bg-background text-foreground;
-    }
+  :root {
+    /* =======================================================
+       BRAND
+       ======================================================= */
+
+    --brand-navy: 214 72% 20%;
+    --brand-navy-foreground: 0 0% 100%;
+
+    --primary: 216 82% 49%;
+    --primary-foreground: 0 0% 100%;
+
+    --primary-hover: 216 83% 43%;
+    --primary-soft: 214 100% 96%;
+    --primary-muted: 214 92% 91%;
+
+    --brand-blue: 210 90% 55%;
+    --brand-blue-soft: 211 100% 96%;
+
+    --accent-blue: 199 92% 52%;
+    --accent-blue-soft: 199 100% 95%;
+
+    /* =======================================================
+       APPLICATION BACKGROUNDS
+       ======================================================= */
+
+    --background: 214 38% 97%;
+    --foreground: 216 48% 12%;
+
+    --surface: 0 0% 100%;
+    --surface-secondary: 214 36% 95%;
+    --surface-tertiary: 213 31% 92%;
+    --surface-blue: 213 100% 97%;
+    --surface-navy: 214 72% 20%;
+    --surface-accent: 198 100% 96%;
+
+    /* =======================================================
+       CARD / POPOVER
+       ======================================================= */
+
+    --card: 0 0% 100%;
+    --card-foreground: 216 48% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 216 48% 12%;
+
+    /* =======================================================
+       TEXT
+       ======================================================= */
+
+    --text-primary: 216 48% 12%;
+    --text-secondary: 214 28% 31%;
+    --text-muted: 215 18% 46%;
+    --text-subtle: 215 16% 59%;
+    --text-disabled: 215 14% 72%;
+
+    --muted: 214 36% 95%;
+    --muted-foreground: 215 18% 46%;
+
+    /* =======================================================
+       BORDERS / INPUTS
+       ======================================================= */
+
+    --border: 214 28% 87%;
+    --border-strong: 214 23% 75%;
+    --input: 214 28% 82%;
+    --ring: 216 82% 49%;
+
+    /* =======================================================
+       SECONDARY / ACCENT
+       ======================================================= */
+
+    --secondary: 214 36% 95%;
+    --secondary-foreground: 216 48% 12%;
+
+    --accent: 214 100% 96%;
+    --accent-foreground: 216 82% 40%;
+
+    /* =======================================================
+       SEMANTIC
+       ======================================================= */
+
+    --success: 152 65% 39%;
+    --success-foreground: 0 0% 100%;
+    --success-soft: 152 62% 95%;
+    --success-border: 152 42% 81%;
+
+    --warning: 35 91% 48%;
+    --warning-foreground: 0 0% 100%;
+    --warning-soft: 42 100% 95%;
+    --warning-border: 41 80% 82%;
+
+    --danger: 2 70% 50%;
+    --danger-foreground: 0 0% 100%;
+    --danger-soft: 2 86% 97%;
+    --danger-border: 2 62% 87%;
+
+    --destructive: 2 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --info: 199 88% 45%;
+    --info-foreground: 0 0% 100%;
+    --info-soft: 199 100% 95%;
+    --info-border: 199 68% 81%;
+
+    /* =======================================================
+       LOAN STATUS
+       ======================================================= */
+
+    --status-draft: 215 16% 48%;
+    --status-submitted: 216 82% 49%;
+    --status-review: 35 91% 48%;
+    --status-approved: 152 65% 39%;
+    --status-rejected: 2 70% 50%;
+    --status-disbursed: 199 88% 45%;
+    --status-closed: 215 16% 38%;
+
+    /* =======================================================
+       MARKETING
+       ======================================================= */
+
+    --marketing-navy: 216 75% 18%;
+    --marketing-blue: 216 82% 49%;
+    --marketing-blue-light: 210 91% 58%;
+    --marketing-sky: 199 92% 52%;
+    --marketing-surface: 213 100% 98%;
+
+    /* =======================================================
+       NAVIGATION
+       ======================================================= */
+
+    --nav-background: 0 0% 100%;
+    --nav-foreground: 216 48% 12%;
+    --nav-muted: 215 18% 46%;
+    --nav-active: 216 82% 49%;
+    --nav-hover: 214 36% 95%;
+
+    /* =======================================================
+       RADIUS
+       ======================================================= */
+
+    --radius: 0.75rem;
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --radius-2xl: 1.25rem;
+
+    /* =======================================================
+       SHADOWS
+       ======================================================= */
+
+    --shadow-xs: 0 1px 2px rgb(15 23 42 / 0.03);
+
+    --shadow-sm:
+      0 1px 3px rgb(15 23 42 / 0.05),
+      0 1px 2px rgb(15 23 42 / 0.03);
+
+    --shadow-md:
+      0 5px 15px rgb(15 23 42 / 0.07);
+
+    --shadow-lg:
+      0 12px 32px rgb(15 23 42 / 0.09);
+
+    --shadow-xl:
+      0 22px 50px rgb(15 23 42 / 0.12);
+
+    --shadow-card:
+      0 2px 8px rgb(15 23 42 / 0.04),
+      0 1px 3px rgb(15 23 42 / 0.03);
+
+    --shadow-brand:
+      0 12px 30px hsl(var(--primary) / 0.18);
+
+    --shadow-floating:
+      0 18px 45px rgb(15 23 42 / 0.12);
+
+    /* =======================================================
+       FOCUS / CHART
+       ======================================================= */
+
+    --focus-ring: 0 0 0 3px hsl(var(--primary) / 0.16);
+
+    --chart-1: 216 82% 49%;
+    --chart-2: 152 65% 39%;
+    --chart-3: 35 91% 48%;
+    --chart-4: 199 88% 45%;
+    --chart-5: 221 70% 60%;
+  }
+
+  .dark {
+    --background: 216 48% 7%;
+    --foreground: 210 40% 98%;
+
+    --brand-navy: 214 70% 78%;
+    --brand-navy-foreground: 216 48% 8%;
+
+    --primary: 214 88% 62%;
+    --primary-foreground: 216 48% 8%;
+
+    --primary-hover: 214 90% 68%;
+    --primary-soft: 216 50% 15%;
+    --primary-muted: 216 45% 18%;
+
+    --brand-blue: 210 90% 64%;
+    --brand-blue-soft: 214 45% 15%;
+
+    --accent-blue: 199 88% 62%;
+    --accent-blue-soft: 199 42% 15%;
+
+    --surface: 216 40% 10%;
+    --surface-secondary: 216 36% 13%;
+    --surface-tertiary: 216 31% 17%;
+    --surface-blue: 216 46% 14%;
+    --surface-navy: 216 48% 11%;
+    --surface-accent: 199 40% 14%;
+
+    --card: 216 40% 10%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 216 40% 10%;
+    --popover-foreground: 210 40% 98%;
+
+    --text-primary: 210 40% 98%;
+    --text-secondary: 214 22% 82%;
+    --text-muted: 215 16% 65%;
+    --text-subtle: 215 14% 55%;
+    --text-disabled: 215 12% 40%;
+
+    --border: 217 25% 21%;
+    --border-strong: 217 20% 29%;
+    --input: 217 25% 24%;
+
+    --muted: 216 35% 14%;
+    --muted-foreground: 215 16% 65%;
+
+    --secondary: 216 35% 14%;
+    --secondary-foreground: 210 40% 98%;
+
+    --accent: 216 45% 15%;
+    --accent-foreground: 214 100% 85%;
+
+    --destructive: 2 70% 57%;
+    --destructive-foreground: 0 0% 100%;
+
+    --nav-background: 216 40% 9%;
+    --nav-foreground: 210 40% 98%;
+    --nav-muted: 215 16% 65%;
+    --nav-active: 214 88% 62%;
+    --nav-hover: 216 35% 15%;
+
+    --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.15);
+    --shadow-sm: 0 2px 5px rgb(0 0 0 / 0.18);
+    --shadow-md: 0 5px 15px rgb(0 0 0 / 0.22);
+    --shadow-lg: 0 12px 32px rgb(0 0 0 / 0.26);
+    --shadow-xl: 0 22px 50px rgb(0 0 0 / 0.30);
+
+    --shadow-card:
+      0 2px 8px rgb(0 0 0 / 0.18),
+      0 1px 3px rgb(0 0 0 / 0.14);
+
+    --shadow-brand:
+      0 12px 30px hsl(var(--primary) / 0.18);
+
+    --shadow-floating:
+      0 18px 45px rgb(0 0 0 / 0.30);
+  }
+
+  *,
+  *::before,
+  *::after {
+    border-color: hsl(var(--border));
+  }
+
   html {
-    @apply font-sans;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+
+    font-family:
+      "Geist Variable",
+      "Geist",
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: hsl(var(--text-primary));
+    letter-spacing: -0.025em;
+    font-weight: 650;
+  }
+
+  h1 {
+    font-size: clamp(1.9rem, 4vw, 3rem);
+    line-height: 1.08;
+  }
+
+  h2 {
+    font-size: clamp(1.45rem, 3vw, 2.1rem);
+    line-height: 1.15;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+    line-height: 1.35;
+  }
+
+  h4 {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  p {
+    line-height: 1.6;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.18);
+    color: hsl(var(--text-primary));
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border-strong)) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border-strong));
+    border-radius: 999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--text-subtle));
+  }
+}
+
+@layer utilities {
+  .surface {
+    background-color: hsl(var(--surface));
+  }
+
+  .surface-secondary {
+    background-color: hsl(var(--surface-secondary));
+  }
+
+  .surface-blue {
+    background-color: hsl(var(--surface-blue));
+  }
+
+  .surface-navy {
+    background-color: hsl(var(--surface-navy));
+  }
+
+  .surface-accent {
+    background-color: hsl(var(--surface-accent));
+  }
+
+  .text-primary {
+    color: hsl(var(--text-primary));
+  }
+
+  .text-secondary {
+    color: hsl(var(--text-secondary));
+  }
+
+  .text-subtle {
+    color: hsl(var(--text-subtle));
+  }
+
+  .text-brand {
+    color: hsl(var(--primary));
+  }
+
+  .text-brand-navy {
+    color: hsl(var(--brand-navy));
+  }
+
+  .bg-brand {
+    background-color: hsl(var(--primary));
+  }
+
+  .bg-brand-navy {
+    background-color: hsl(var(--brand-navy));
+  }
+
+  .bg-brand-soft {
+    background-color: hsl(var(--primary-soft));
+  }
+
+  .bg-brand-muted {
+    background-color: hsl(var(--primary-muted));
+  }
+
+  .bg-accent-blue {
+    background-color: hsl(var(--accent-blue));
+  }
+
+  .bg-accent-blue-soft {
+    background-color: hsl(var(--accent-blue-soft));
+  }
+
+  .bg-brand-gradient {
+    background:
+      linear-gradient(
+        135deg,
+        hsl(var(--marketing-navy)) 0%,
+        hsl(var(--marketing-blue)) 55%,
+        hsl(var(--marketing-sky)) 100%
+      );
+  }
+
+  .bg-brand-gradient-soft {
+    background:
+      linear-gradient(
+        135deg,
+        hsl(var(--surface-blue)) 0%,
+        hsl(var(--surface-accent)) 100%
+      );
+  }
+
+  .bg-navy-gradient {
+    background:
+      linear-gradient(
+        135deg,
+        hsl(var(--brand-navy)) 0%,
+        hsl(var(--marketing-blue)) 100%
+      );
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-sm);
+  }
+
+  .shadow-brand {
+    box-shadow: var(--shadow-brand);
+  }
+
+  .shadow-floating {
+    box-shadow: var(--shadow-floating);
+  }
+
+  .focus-ring {
+    box-shadow: var(--focus-ring);
+  }
+
+  .page-container,
+  .section-container {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 80rem;
+    padding-inline: 1rem;
+  }
+
+  .page-container {
+    padding-block: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .page-container,
+    .section-container {
+      padding-inline: 1.5rem;
     }
+
+    .page-container {
+      padding-block: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .page-container,
+    .section-container {
+      padding-inline: 2rem;
+    }
+
+    .page-container {
+      padding-block: 2rem;
+    }
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    color: hsl(var(--foreground));
+  }
+
+  @media (min-width: 640px) {
+    .page-title {
+      font-size: 1.5rem;
+    }
+  }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+
+  @media (min-width: 640px) {
+    .section-title {
+      font-size: 1.125rem;
+    }
+  }
+
+  .subsection-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+
+  .text-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: hsl(var(--foreground));
+  }
+
+  .text-helper {
+    font-size: 0.75rem;
+    line-height: 1.625;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .text-caption {
+    font-size: 0.6875rem;
+    line-height: 1.625;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .financial-label {
+    font-size: 0.875rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .financial-value {
+    font-size: 1.125rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+    color: hsl(var(--foreground));
+  }
+
+  .financial-value-lg {
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+    color: hsl(var(--foreground));
+  }
+
+  .touch-target {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+
+  .status-badge {
+    font-weight: 500;
+  }
 }

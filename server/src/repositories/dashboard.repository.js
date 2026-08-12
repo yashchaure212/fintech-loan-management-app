@@ -10,12 +10,20 @@ export const dashboardRepository = {
       where: {
         id: userId,
       },
-      include: {
-        role: true,
-        customerProfile: true,
-        addresses: true,
-        employment: true,
-        kycDocuments: true,
+      select: {
+        id: true,
+
+        customerProfile: {
+          select: {
+            id: true,
+          },
+        },
+
+        addresses: {
+          select: {
+            id: true,
+          },
+        },
       },
     });
   },
@@ -54,7 +62,9 @@ export const dashboardRepository = {
   sumOutstandingAmount(userId) {
     return prisma.emiSchedule.aggregate({
       where: {
-        status: "PENDING",
+        status: {
+          in: ["PENDING", "PARTIALLY_PAID", "OVERDUE"],
+        },
         loanApplication: {
           userId,
         },
@@ -69,7 +79,9 @@ export const dashboardRepository = {
   findNextEmi(userId) {
     return prisma.emiSchedule.findFirst({
       where: {
-        status: "PENDING",
+        status: {
+          in: ["PENDING", "PARTIALLY_PAID", "OVERDUE"],
+        },
         loanApplication: {
           userId,
         },
@@ -80,22 +92,20 @@ export const dashboardRepository = {
     });
   },
 
-  countPendingKyc(userId) {
-    return prisma.kycDocument.count({
-      where: {
-        userId,
-        status: "PENDING",
-      },
-    });
-  },
-
   recentApplications(userId) {
     return prisma.loanApplication.findMany({
       where: {
         userId,
       },
       include: {
-        loanType: true,
+        loanType: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            icon: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -139,14 +149,6 @@ export const dashboardRepository = {
     return prisma.loanApplication.count({
       where: {
         status,
-      },
-    });
-  },
-
-  countPendingKycDocuments() {
-    return prisma.kycDocument.count({
-      where: {
-        status: "PENDING",
       },
     });
   },

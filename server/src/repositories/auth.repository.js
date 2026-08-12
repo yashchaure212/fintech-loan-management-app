@@ -64,9 +64,10 @@ export const authRepository = {
     });
   },
   findRefreshToken(token) {
-    return prisma.refreshToken.findUnique({
+    return prisma.refreshToken.findFirst({
       where: {
         token,
+        revokedAt: null,
       },
       include: {
         user: {
@@ -77,18 +78,78 @@ export const authRepository = {
       },
     });
   },
-  deleteRefreshToken(token) {
-    return prisma.refreshToken.deleteMany({
+  revokeRefreshToken(token) {
+    return prisma.refreshToken.updateMany({
       where: {
         token,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+  },
+  deleteRefreshToken(token) {
+    return this.revokeRefreshToken(token);
+  },
+  revokeAllRefreshTokens(userId) {
+    return prisma.refreshToken.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
       },
     });
   },
   deleteAllRefreshTokens(userId) {
+    return this.revokeAllRefreshTokens(userId);
+  },
+  deleteStaleRefreshTokens(userId) {
     return prisma.refreshToken.deleteMany({
       where: {
         userId,
+        OR: [
+          {
+            expiresAt: {
+              lt: new Date(),
+            },
+          },
+          {
+            revokedAt: {
+              not: null,
+            },
+          },
+        ],
       },
+    });
+  },
+  rotateRefreshToken(oldToken, newTokenData) {
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.refreshToken.findFirst({
+        where: {
+          token: oldToken,
+          revokedAt: null,
+        },
+      });
+
+      if (!existing) {
+        return null;
+      }
+
+      await tx.refreshToken.update({
+        where: {
+          id: existing.id,
+        },
+        data: {
+          revokedAt: new Date(),
+        },
+      });
+
+      return tx.refreshToken.create({
+        data: newTokenData,
+      });
     });
   },
   createPasswordResetToken(data) {

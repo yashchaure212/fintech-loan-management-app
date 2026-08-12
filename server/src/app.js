@@ -2,36 +2,55 @@ import express from "express";
 import authRoutes from "./routes/auth.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import addressRoutes from "./routes/address.routes.js";
-import employmentRoutes from "./routes/employment.routes.js";
-import kycRoutes from "./routes/kyc.routes.js";
 import loanTypeRoutes from "./routes/loanType.routes.js";
-import loanRoutes from "./routes/loan.routes.js";
+import loanApplicationRoutes from "./routes/loanApplication.routes.js";
 import loanStatusHistoryRoutes from "./routes/loanStatusHistory.routes.js";
 import loanWorkflowRoutes from "./routes/loanWorkflow.routes.js";
 import loanInterestConfigurationRoutes from "./routes/loanInterestConfiguration.routes.js";
 import loanEligibilityRoutes from "./routes/loanEligibility.routes.js";
 import loanRequiredDocumentRoutes from "./routes/loanRequiredDocument.routes.js";
+import loanDocumentRoutes from "./routes/loanDocument.routes.js";
 import dashboardRoutes from "./routes/dashboard.routes.js";
+import adminLoanRoutes from "./routes/adminLoan.routes.js";
+import educationLoanRoutes from "./routes/educationLoan.routes.js";
+import emiRoutes from "./routes/emi.routes.js";
+import emiPaymentRoutes from "./routes/emiPayment.routes.js";
 
 import { errorHandler } from "./middlewares/error.middleware.js";
+import cors from "cors";
 
 const app = express();
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 
 // Middleware
 app.use(express.json());
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/profile", profileRoutes);
 app.use("/api/v1/address", addressRoutes);
-app.use("/api/v1/employment", employmentRoutes);
-app.use("/api/v1/kyc", kycRoutes);
 app.use("/api/v1/loan-types", loanTypeRoutes);
-app.use("/api/v1/loans", loanRoutes);
+app.use("/api/v1/loan-applications", loanApplicationRoutes);
 app.use("/api/v1/loan-status-history", loanStatusHistoryRoutes);
 app.use("/api/v1/loan-workflow", loanWorkflowRoutes);
-app.use("/api/loan-interest-configurations", loanInterestConfigurationRoutes);
-app.use("/api/loan-eligibilities", loanEligibilityRoutes);
-app.use("/api/loan-required-documents", loanRequiredDocumentRoutes);
+app.use(
+  "/api/v1/loan-interest-configurations",
+  loanInterestConfigurationRoutes,
+);
+app.use("/api/v1/loan-eligibilities", loanEligibilityRoutes);
+app.use("/api/v1/loan-required-documents", loanRequiredDocumentRoutes);
+app.use("/api/v1/loan-documents", loanDocumentRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
+app.use("/api/v1/admin/loans", adminLoanRoutes);
+app.use("/api/v1/education-loans", educationLoanRoutes);
+app.use("/api/v1/emi", emiRoutes);
+app.use("/api/v1/emi-payments", emiPaymentRoutes);
 
 app.use(errorHandler);
 

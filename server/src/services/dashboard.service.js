@@ -14,7 +14,6 @@ export const dashboardService = {
       borrowedAmount,
       outstandingAmount,
       nextEmi,
-      pendingKycDocuments,
       recentApplications,
     ] = await Promise.all([
       dashboardRepository.getCustomer(userId),
@@ -28,8 +27,6 @@ export const dashboardService = {
       dashboardRepository.sumOutstandingAmount(userId),
 
       dashboardRepository.findNextEmi(userId),
-
-      dashboardRepository.countPendingKyc(userId),
 
       dashboardRepository.recentApplications(userId),
     ]);
@@ -47,49 +44,35 @@ export const dashboardService = {
 
       totalBorrowed: Number(borrowedAmount._sum.loanAmount || 0),
 
-      totalOutstanding:
+      totalOutstanding: Math.max(
+        0,
         Number(outstandingAmount._sum.emiAmount || 0) -
-        Number(outstandingAmount._sum.paidAmount || 0),
+          Number(outstandingAmount._sum.paidAmount || 0),
+      ),
 
       nextEmi: nextEmi
         ? {
             dueDate: nextEmi.dueDate,
-            amount: Number(nextEmi.emiAmount),
+            amount: Math.max(
+              0,
+              Number(nextEmi.emiAmount) - Number(nextEmi.paidAmount || 0),
+            ),
           }
         : null,
-
-      pendingKycDocuments,
 
       recentApplications,
     };
   },
 
   calculateProfileCompletion(user) {
-    let completed = 0;
+    const sections = [
+      !!user.customerProfile,
+      user.addresses?.length > 0,
+    ];
 
-    const totalSections = 4;
+    const completed = sections.filter(Boolean).length;
 
-    // Customer Profile
-    if (user.customerProfile) {
-      completed++;
-    }
-
-    // Address
-    if (user.addresses?.length > 0) {
-      completed++;
-    }
-
-    // Employment
-    if (user.employment) {
-      completed++;
-    }
-
-    // KYC
-    if (user.kycDocuments?.length > 0) {
-      completed++;
-    }
-
-    return Math.round((completed / totalSections) * 100);
+    return Math.round((completed / sections.length) * 100);
   },
 
   // ==========================
@@ -107,7 +90,6 @@ export const dashboardService = {
       rejectedLoans,
       disbursedLoans,
       closedLoans,
-      pendingKyc,
       totalLoanAmount,
       totalDisbursed,
     ] = await Promise.all([
@@ -128,8 +110,6 @@ export const dashboardService = {
       dashboardRepository.countLoanByStatus("DISBURSED"),
 
       dashboardRepository.countLoanByStatus("CLOSED"),
-
-      dashboardRepository.countPendingKycDocuments(),
 
       dashboardRepository.sumLoanAmount(),
 
@@ -154,8 +134,6 @@ export const dashboardService = {
       disbursedLoans,
 
       closedLoans,
-
-      pendingKyc,
 
       totalLoanAmount: Number(totalLoanAmount._sum.loanAmount || 0),
 

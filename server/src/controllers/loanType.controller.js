@@ -28,6 +28,20 @@ export const loanTypeController = {
     }
   },
 
+  // Customer-facing: active loan products only
+  async getActive(req, res, next) {
+    try {
+      const result = await loanTypeService.getActive();
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getById(req, res, next) {
     try {
       const result = await loanTypeService.getById(req.params.id);
@@ -79,6 +93,32 @@ export const loanTypeController = {
       return res.status(200).json({
         success: true,
         message: "Loan type deleted successfully",
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getPublic(req, res, next) {
+    try {
+      const result = await loanTypeService.getPublic();
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getPublicById(req, res, next) {
+    try {
+      const result = await loanTypeService.getPublicById(req.params.id);
+
+      return res.status(200).json({
+        success: true,
+        data: result,
       });
     } catch (error) {
       next(error);

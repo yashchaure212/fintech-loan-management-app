@@ -15,26 +15,66 @@ export const loanApplicationRepository = {
     return prisma.loanInterestConfiguration.findFirst({
       where: {
         loanTypeId,
-        isActive: true,
-
         minAmount: {
           lte: amount,
         },
-
         maxAmount: {
           gte: amount,
         },
-
         minTenure: {
           lte: tenure,
         },
-
         maxTenure: {
           gte: tenure,
         },
+        isActive: true,
+        isDeleted: false,
+        effectiveFrom: {
+          lte: new Date(),
+        },
+        OR: [
+          {
+            effectiveTo: null,
+          },
+          {
+            effectiveTo: {
+              gte: new Date(),
+            },
+          },
+        ],
       },
       orderBy: {
         effectiveFrom: "desc",
+      },
+    });
+  },
+
+  findEligibilityRule(loanTypeId) {
+    return prisma.loanEligibility.findFirst({
+      where: {
+        loanTypeId,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  },
+
+  findRequiredDocuments(loanTypeId) {
+    return prisma.loanRequiredDocument.findMany({
+      where: {
+        loanTypeId,
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+  },
+
+  findCustomerProfile(userId) {
+    return prisma.customerProfile.findUnique({
+      where: {
+        userId,
       },
     });
   },
@@ -44,7 +84,18 @@ export const loanApplicationRepository = {
       data,
       include: {
         loanType: true,
-        user: true,
+      },
+    });
+  },
+
+  update(tx, id, data) {
+    return tx.loanApplication.update({
+      where: {
+        id,
+      },
+      data,
+      include: {
+        loanType: true,
       },
     });
   },
@@ -68,7 +119,7 @@ export const loanApplicationRepository = {
         loanType: true,
       },
       orderBy: {
-        createdAt: "desc",
+        updatedAt: "desc",
       },
     });
   },
@@ -80,7 +131,26 @@ export const loanApplicationRepository = {
       },
       include: {
         loanType: true,
-        user: true,
+        educationLoan: {
+          include: {
+            parents: {
+              include: {
+                employment: true,
+              },
+            },
+          },
+        },
+        personalLoan: {
+          include: {
+            employment: true,
+          },
+        },
+        documents: true,
+        statusHistory: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
       },
     });
   },

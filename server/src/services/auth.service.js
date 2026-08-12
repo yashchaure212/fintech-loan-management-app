@@ -8,37 +8,68 @@ import {
 import AppError from "../utils/AppError.js";
 import { addDays } from "../utils/date.util.js";
 import { sanitizeUser } from "../utils/sanitizeUser.js";
+import { toAuthAppError } from "../utils/jwtError.util.js";
 import crypto from "crypto";
+
+function buildTokenPayload(user) {
+  return {
+    id: user.id,
+    phone: user.phone,
+    email: user.email,
+    role: user.role.name,
+  };
+}
+
+function assertActiveUser(user, message = "Your account has been disabled") {
+  if (!user.isActive || user.isDeleted) {
+    throw new AppError(message, 403);
+  }
+}
+
+async function issueSession(user) {
+  const payload = buildTokenPayload(user);
+  const accessToken = generateAccessToken(payload);
+  const refreshToken = generateRefreshToken(payload);
+
+  await authRepository.deleteStaleRefreshTokens(user.id);
+
+  await authRepository.createRefreshToken({
+    userId: user.id,
+    token: refreshToken,
+    expiresAt: addDays(7),
+  });
+
+  return {
+    user: sanitizeUser(user),
+    accessToken,
+    refreshToken,
+  };
+}
 
 export const authService = {
   async register(data) {
     const { email, phone, password } = data;
 
-    // Check email
     const existingEmail = await authRepository.findUserByEmail(email);
 
     if (existingEmail) {
       throw new AppError("Email already exists", 409);
     }
 
-    // Check phone
     const existingPhone = await authRepository.findUserByPhone(phone);
 
     if (existingPhone) {
       throw new AppError("Phone number already exists", 409);
     }
 
-    // Find CUSTOMER role
     const customerRole = await authRepository.findRoleByName("CUSTOMER");
 
     if (!customerRole) {
       throw new AppError("Customer role not found", 500);
     }
 
-    // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Create user
     const user = await authRepository.createUser({
       email,
       phone,
@@ -46,30 +77,7 @@ export const authService = {
       roleId: customerRole.id,
     });
 
-    // JWT Payload
-    const payload = {
-      id: user.id,
-      phone: user.phone,
-      email: user.email,
-      role: user.role.name,
-    };
-
-    // Generate Tokens
-    const accessToken = generateAccessToken(payload);
-    const refreshToken = generateRefreshToken(payload);
-
-    // Save Refresh Token
-    await authRepository.createRefreshToken({
-      userId: user.id,
-      token: refreshToken,
-      expiresAt: addDays(7),
-    });
-
-    return {
-      user: sanitizeUser(user),
-      accessToken,
-      refreshToken,
-    };
+    return issueSession(user);
   },
 
   async login(data) {
@@ -81,36 +89,15 @@ export const authService = {
       throw new AppError("Invalid phone or password", 401);
     }
 
+    assertActiveUser(user);
+
     const isPasswordValid = await comparePassword(password, user.password);
 
     if (!isPasswordValid) {
       throw new AppError("Invalid phone or password", 401);
     }
 
-    const payload = {
-      id: user.id,
-      phone: user.phone,
-      email: user.email,
-      role: user.role.name,
-    };
-
-    // Generate Tokens
-    const accessToken = generateAccessToken(payload);
-
-    const refreshToken = generateRefreshToken(payload);
-
-    // Save Refresh Token
-    await authRepository.createRefreshToken({
-      userId: user.id,
-      token: refreshToken,
-      expiresAt: addDays(7),
-    });
-
-    return {
-      user: sanitizeUser(user),
-      accessToken,
-      refreshToken,
-    };
+    return issueSession(user);
   },
 
   async refreshToken(token) {
@@ -120,28 +107,48 @@ export const authService = {
       throw new AppError("Invalid refresh token", 401);
     }
 
+    assertActiveUser(storedToken.user);
+
     if (new Date() > storedToken.expiresAt) {
+      await authRepository.revokeRefreshToken(token);
       throw new AppError("Refresh token expired", 401);
     }
 
-    const decoded = verifyRefreshToken(token);
+    try {
+      verifyRefreshToken(token);
+    } catch (error) {
+      await authRepository.revokeRefreshToken(token);
+      throw toAuthAppError(
+        error,
+        "Refresh token expired",
+        "Invalid refresh token",
+      );
+    }
 
-    const payload = {
-      id: decoded.id,
-      phone: decoded.phone,
-      email: decoded.email,
-      role: decoded.role,
-    };
-
+    const payload = buildTokenPayload(storedToken.user);
     const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    const rotated = await authRepository.rotateRefreshToken(token, {
+      userId: storedToken.userId,
+      token: refreshToken,
+      expiresAt: addDays(7),
+    });
+
+    if (!rotated) {
+      throw new AppError("Invalid refresh token", 401);
+    }
 
     return {
       accessToken,
+      refreshToken,
     };
   },
 
   async logout(token) {
-    await authRepository.deleteRefreshToken(token);
+    if (token) {
+      await authRepository.revokeRefreshToken(token);
+    }
 
     return true;
   },
@@ -159,14 +166,12 @@ export const authService = {
   async changePassword(userId, data) {
     const { currentPassword, newPassword } = data;
 
-    // Find user
     const user = await authRepository.findUserById(userId);
 
     if (!user) {
       throw new AppError("User not found", 404);
     }
 
-    // Verify current password
     const isPasswordValid = await comparePassword(
       currentPassword,
       user.password,
@@ -176,14 +181,10 @@ export const authService = {
       throw new AppError("Current password is incorrect", 401);
     }
 
-    // Hash new password
     const hashedPassword = await hashPassword(newPassword);
 
-    // Update password
     await authRepository.updatePassword(userId, hashedPassword);
-
-    // Logout all existing sessions
-    await authRepository.deleteAllRefreshTokens(userId);
+    await authRepository.revokeAllRefreshTokens(userId);
 
     return true;
   },
@@ -197,11 +198,11 @@ export const authService = {
 
     const token = crypto.randomBytes(32).toString("hex");
 
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
     await authRepository.createPasswordResetToken({
       userId: user.id,
-
-      token,
-
+      token: hashedToken,
       expiresAt: addDays(1),
     });
 
@@ -213,7 +214,9 @@ export const authService = {
   async resetPassword(data) {
     const { token, newPassword } = data;
 
-    const resetToken = await authRepository.findPasswordResetToken(token);
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const resetToken = await authRepository.findPasswordResetToken(hashedToken);
 
     if (!resetToken) {
       throw new AppError("Invalid token", 400);
@@ -226,10 +229,8 @@ export const authService = {
     const hashedPassword = await hashPassword(newPassword);
 
     await authRepository.updatePassword(resetToken.userId, hashedPassword);
-
-    await authRepository.deleteAllRefreshTokens(resetToken.userId);
-
-    await authRepository.deletePasswordResetToken(token);
+    await authRepository.revokeAllRefreshTokens(resetToken.userId);
+    await authRepository.deletePasswordResetToken(hashedToken);
 
     return true;
   },

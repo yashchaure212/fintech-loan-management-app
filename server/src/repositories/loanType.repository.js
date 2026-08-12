@@ -34,6 +34,46 @@ export const loanTypeRepository = {
     });
   },
 
+  // Customer/public-facing active loan products
+  findAllActive() {
+    return prisma.loanType.findMany({
+      where: {
+        isDeleted: false,
+        isActive: true,
+      },
+      include: {
+        interestConfigurations: {
+          where: {
+            isActive: true,
+            isDeleted: false,
+          },
+        },
+      },
+      orderBy: {
+        displayOrder: "asc",
+      },
+    });
+  },
+
+  // Customer/public-facing single active loan product
+  findActiveById(id) {
+    return prisma.loanType.findFirst({
+      where: {
+        id,
+        isDeleted: false,
+        isActive: true,
+      },
+      include: {
+        interestConfigurations: {
+          where: {
+            isActive: true,
+            isDeleted: false,
+          },
+        },
+      },
+    });
+  },
+
   update(id, data) {
     return prisma.loanType.update({
       where: {

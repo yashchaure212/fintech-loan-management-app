@@ -17,13 +17,22 @@ export const loanWorkflowRepository = {
     });
   },
 
-  updateStatus(tx, loanApplicationId, status) {
+  updateStatus(tx, loanApplicationId, updateData) {
     return tx.loanApplication.update({
       where: {
         id: loanApplicationId,
       },
-      data: {
-        status,
+
+      data: updateData,
+
+      select: {
+        id: true,
+        loanAmount: true,
+        interestRate: true,
+        tenureMonths: true,
+        emi: true,
+        disbursedAt: true,
+        status: true,
       },
     });
   },
@@ -38,3 +47,4 @@ export const loanWorkflowRepository = {
     return prisma.$transaction(callback);
   },
 };
+
