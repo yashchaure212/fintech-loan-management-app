@@ -21,11 +21,10 @@ import cors from "cors";
 
 const app = express();
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://fintech-loan-management-app-nine.vercel.app",
-];
-
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((o) => o.trim())
+  .filter(Boolean);
 app.use(
   cors({
     origin: (origin, callback) => {
