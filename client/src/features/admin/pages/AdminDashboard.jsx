@@ -5,13 +5,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import StatusBadge from "@/components/common/StatusBadge";
+import { formatCurrency } from "@/features/loan/utils/loanFormatters";
+import { useGetAdminDashboardQuery } from "@/features/dashboard/dashboardApi";
 
 import { useGetAdminLoanDashboardQuery } from "../api/adminLoanApi";
 
 function AdminDashboard() {
   const { data, isLoading, isError } = useGetAdminLoanDashboardQuery();
+  const {
+    data: overviewResponse,
+    isLoading: overviewLoading,
+    isError: overviewError,
+  } = useGetAdminDashboardQuery();
 
-  if (isLoading) {
+  if (isLoading || overviewLoading) {
     return (
       <div className="space-y-6">
         <div className="space-y-2">
@@ -37,6 +44,7 @@ function AdminDashboard() {
   }
 
   const stats = data?.data || [];
+  const overview = overviewResponse?.data || {};
   const totalApplications = stats.reduce(
     (sum, item) => sum + (item._count?.status || 0),
     0,
@@ -48,7 +56,7 @@ function AdminDashboard() {
         <div>
           <h1 className="page-title">Admin dashboard</h1>
           <p className="mt-1 text-helper">
-            Overview of loan applications by status.
+            Overview of customers, loan amounts, and applications by status.
           </p>
         </div>
 
@@ -59,6 +67,31 @@ function AdminDashboard() {
           </Link>
         </Button>
       </div>
+
+      {!overviewError ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border bg-card p-4 sm:p-5">
+            <p className="financial-label">Total customers</p>
+            <p className="financial-value mt-1">{overview.totalCustomers ?? 0}</p>
+          </div>
+          <div className="rounded-xl border bg-card p-4 sm:p-5">
+            <p className="financial-label">Active customers</p>
+            <p className="financial-value mt-1">{overview.activeCustomers ?? 0}</p>
+          </div>
+          <div className="rounded-xl border bg-card p-4 sm:p-5">
+            <p className="financial-label">Total loan amount</p>
+            <p className="financial-value mt-1">
+              {formatCurrency(overview.totalLoanAmount)}
+            </p>
+          </div>
+          <div className="rounded-xl border bg-card p-4 sm:p-5">
+            <p className="financial-label">Total disbursed</p>
+            <p className="financial-value mt-1">
+              {formatCurrency(overview.totalDisbursed)}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       <div className="rounded-xl border bg-card p-4 sm:p-5">
         <p className="financial-label">Total applications</p>

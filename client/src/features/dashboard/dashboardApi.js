@@ -6,7 +6,13 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: () => "/dashboard/customer",
       providesTags: ["Dashboard"],
     }),
+
+    getAdminDashboard: builder.query({
+      query: () => "/dashboard/admin",
+      providesTags: ["Dashboard"],
+    }),
   }),
 });
 
-export const { useGetCustomerDashboardQuery } = dashboardApi;
+export const { useGetCustomerDashboardQuery, useGetAdminDashboardQuery } =
+  dashboardApi;
