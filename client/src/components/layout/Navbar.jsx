@@ -1,12 +1,5 @@
 import { useState } from "react";
-import {
-  Bell,
-  ChevronDown,
-  HelpCircle,
-  LogOut,
-  Menu,
-  User,
-} from "lucide-react";
+import { ChevronDown, LogOut, Menu, User } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -118,20 +111,6 @@ function Navbar() {
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
-                className="relative hidden h-10 w-10 rounded-xl sm:inline-flex"
-                onClick={() => navigate("/customer/notifications")}
-                aria-label="Notifications"
-              >
-                <Bell className="h-[18px] w-[18px]" />
-                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary" />
-              </Button>
-            ) : null}
-
-            {!isAdmin ? (
-              <Button
-                type="button"
-                variant="ghost"
                 className="hidden h-10 gap-2 rounded-xl px-2.5 lg:flex"
                 onClick={() => navigate("/customer/profile")}
               >
@@ -224,17 +203,6 @@ function Navbar() {
                   </Link>
                 );
               })}
-
-              {!isAdmin ? (
-                <Link
-                  to="/customer/support"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-foreground hover:bg-muted"
-                >
-                  <HelpCircle className="h-[18px] w-[18px] text-muted-foreground" />
-                  Help & Support
-                </Link>
-              ) : null}
             </nav>
 
             {!isAdmin ? (
