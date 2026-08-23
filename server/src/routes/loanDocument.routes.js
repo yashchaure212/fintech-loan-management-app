@@ -25,29 +25,34 @@ const router = Router();
 router.post(
   "/",
   protect,
+  authorize("CUSTOMER"),
   upload.single("file"),
   validate(createLoanDocumentSchema),
   loanDocumentController.upload,
 );
 
-// Get documents for my loan application
 router.get(
   "/application/:loanApplicationId/requirements",
   protect,
+  authorize("CUSTOMER"),
   loanDocumentController.getRequiredDocuments,
 );
 
 router.get(
   "/application/:loanApplicationId",
   protect,
+  authorize("CUSTOMER"),
   loanDocumentController.getMyDocuments,
 );
 
-// Get my document
-router.get("/:id", protect, loanDocumentController.getById);
+router.get("/:id", protect, authorize("CUSTOMER"), loanDocumentController.getById);
 
-// Delete my document
-router.delete("/:id", protect, loanDocumentController.delete);
+router.delete(
+  "/:id",
+  protect,
+  authorize("CUSTOMER"),
+  loanDocumentController.delete,
+);
 
 /*
 

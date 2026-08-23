@@ -72,7 +72,7 @@ function EligibilitySection() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-5 backdrop-blur-sm sm:p-6">
+              <div className="rounded-xl border border-white/10 bg-white/[0.07] p-5 backdrop-blur-sm sm:p-6">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-sky-200">
                     <CheckCircle2 className="h-5 w-5" />

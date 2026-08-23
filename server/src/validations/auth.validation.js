@@ -1,57 +1,58 @@
 import { z } from "zod";
 
+export const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(32, "Password cannot exceed 32 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number")
+  .regex(
+    /[!@#$%^&*(),.?":{}|<>]/,
+    "Password must contain at least one special character",
+  );
+
+const phoneSchema = z
+  .string()
+  .trim()
+  .regex(/^[6-9]\d{9}$/, "Invalid phone number");
+
+const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(z.email("Invalid email address"));
+
 export const registerSchema = z.object({
-  email: z.email("Invalid email address").trim().toLowerCase(),
-
-  phone: z
-    .string()
-    .trim()
-    .regex(/^[6-9]\d{9}$/, "Invalid phone number"),
-
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(32, "Password cannot exceed 32 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one number")
-    .regex(
-      /[!@#$%^&*(),.?":{}|<>]/,
-      "Password must contain at least one special character",
-    ),
+  email: emailSchema,
+  phone: phoneSchema,
+  password: passwordSchema,
 });
 
 export const loginSchema = z.object({
-  phone: z
-    .string()
-    .trim()
-    .regex(/^[6-9]\d{9}$/, "Invalid phone number"),
-
+  phone: phoneSchema,
   password: z.string().min(1, "Password is required"),
 });
 
-export const refreshTokenSchema = z.object({
-  refreshToken: z.string().min(1, "Refresh token is required"),
-});
+export const refreshTokenSchema = z
+  .object({
+    refreshToken: z.string().min(1).optional(),
+  })
+  .optional()
+  .transform((value) => value ?? {});
 
-export const logoutSchema = z.object({
-  refreshToken: z.string().min(1, "Refresh token is required").optional(),
-});
+export const logoutSchema = z
+  .object({
+    refreshToken: z.string().min(1).optional(),
+  })
+  .optional()
+  .transform((value) => value ?? {});
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1),
-
-    newPassword: z
-      .string()
-      .min(8)
-      .max(32)
-      .regex(/[A-Z]/)
-      .regex(/[a-z]/)
-      .regex(/[0-9]/)
-      .regex(/[!@#$%^&*(),.?":{}|<>]/),
-
-    confirmPassword: z.string(),
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: passwordSchema,
+    confirmPassword: z.string().min(1, "Confirm password is required"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Passwords do not match",
@@ -59,11 +60,10 @@ export const changePasswordSchema = z
   });
 
 export const forgotPasswordSchema = z.object({
-  phone: z.string().regex(/^[6-9]\d{9}$/),
+  phone: phoneSchema,
 });
 
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1),
-
-  newPassword: z.string().min(8),
+  token: z.string().trim().min(1, "Reset token is required"),
+  newPassword: passwordSchema,
 });

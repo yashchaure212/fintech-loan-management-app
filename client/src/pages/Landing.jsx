@@ -1,76 +1,97 @@
-import PublicNavbar from "@/components/marketing/PublicNavbar";
-import ProductNavigationRail from "@/components/marketing/ProductNavigationRail";
-import PromotionStrip from "@/components/marketing/PromotionStrip";
-import HeroSection from "@/components/marketing/HeroSection";
-import StatsSection from "@/components/marketing/StatsSection";
-import FeaturedServices from "@/components/marketing/FeaturedServices";
-import LoanTypeSection from "@/components/marketing/LoanTypeSection";
-import OfferCards from "@/components/marketing/OfferCards";
+import LandingHero from "@/components/marketing/LandingHero";
+import LandingQuickLinks from "@/components/marketing/LandingQuickLinks";
+import LandingLoanShowcase from "@/components/marketing/LandingLoanShowcase";
+import LandingOffers from "@/components/marketing/LandingOffers";
+import LandingFinanceCategories from "@/components/marketing/LandingFinanceCategories";
+import LandingTrustStrip from "@/components/marketing/LandingTrustStrip";
+import EMICalculatorPreview from "@/components/marketing/EMICalculatorPreview";
 import HowItWorksSection from "@/components/marketing/HowItWorksSection";
 import EligibilitySection from "@/components/marketing/EligibilitySection";
-import EMICalculatorPreview from "@/components/marketing/EMICalculatorPreview";
-import WhyChooseUs from "@/components/marketing/WhyChooseUs";
-import SecuritySection from "@/components/marketing/SecuritySection";
-import TrustSection from "@/components/marketing/TrustSection";
 import FAQSection from "@/components/marketing/FAQSection";
 import PublicFooter from "@/components/marketing/PublicFooter";
-import ApplyNowButton from "@/components/marketing/ApplyNowButton";
+
+import LoanDraftResumeCard from "@/components/marketing/LoanDraftResumeCard";
 
 function Landing() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <PublicNavbar />
-      <ProductNavigationRail />
-      <PromotionStrip />
-
+    <div className="min-h-screen bg-[#f7f9fb] text-foreground">
       <main>
-        <HeroSection />
-        <StatsSection />
-        <FeaturedServices />
-        <LoanTypeSection />
-        <OfferCards />
-        <HowItWorksSection />
-        <EligibilitySection />
+        <LandingQuickLinks />
+
+        {/* =====================================================
+            RESUME SAVED LOAN APPLICATION
+        ===================================================== */}
+
+        <LoanDraftResumeCard />
+
+        <LandingHero />
+
+        {/* Promotional announcement */}
+        <section className="border-b border-border bg-[#fffaf2] px-3 py-2.5 sm:px-6 lg:px-8">
+          <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 border border-[#eadfca] bg-white px-3 py-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="shrink-0 rounded-sm bg-orange-500 px-1.5 py-1 text-[9px] font-bold uppercase text-white">
+                Featured
+              </span>
+
+              <p className="truncate text-xs font-semibold">
+                Education loan applications are available online.
+              </p>
+            </div>
+
+            <a
+              href="#loan-products"
+              className="shrink-0 text-xs font-bold text-primary"
+            >
+              Explore
+            </a>
+          </div>
+        </section>
+
+        <LandingLoanShowcase />
+
+        <LandingOffers />
+
+        <LandingFinanceCategories />
+
+        <LandingTrustStrip />
+
         <EMICalculatorPreview />
-        <WhyChooseUs />
-        <SecuritySection />
-        <TrustSection />
-        <FAQSection />
 
-        <section className="px-4 py-14 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="overflow-hidden rounded-[1.5rem] bg-navy-gradient px-6 py-10 text-white shadow-floating sm:px-10 lg:px-12 lg:py-12">
-              <div className="flex flex-col gap-7 lg:flex-row lg:items-center lg:justify-between">
-                <div className="max-w-2xl">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/60">
-                    Ready when you are
-                  </p>
+        <HowItWorksSection />
 
-                  <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-                    Take the next step toward your education goals.
-                  </h2>
+        <EligibilitySection />
 
-                  <p className="mt-3 text-sm leading-6 text-white/75 sm:text-base">
-                    Start your application online and keep your loan journey
-                    organized from one secure account.
-                  </p>
-                </div>
+        {/* Final CTA */}
+        <section className="border-y border-border bg-[#f8fafc] px-3 py-7 sm:px-6 sm:py-9 lg:px-8">
+          <div className="mx-auto max-w-[1440px]">
+            <div className="flex flex-col gap-4 rounded-lg bg-[hsl(var(--brand-navy))] px-5 py-6 text-white sm:flex-row sm:items-center sm:justify-between sm:px-7">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.1em] text-blue-200">
+                  Ready to begin?
+                </p>
 
-                <div className="shrink-0">
-                  <div className="flex flex-wrap gap-2">
-                    <ApplyNowButton className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-[hsl(var(--brand-navy))] shadow-lg transition hover:-translate-y-px hover:bg-white/90" />
-                    <a
-                      href="#loan-products"
-                      className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/15"
-                    >
-                      Explore products
-                    </a>
-                  </div>
-                </div>
+                <h2 className="mt-1 text-xl font-bold">
+                  Start with the loan journey that fits your goal.
+                </h2>
+
+                <p className="mt-1 text-xs text-white/65">
+                  Product availability and final terms depend on configured
+                  eligibility and review.
+                </p>
               </div>
+
+              <a
+                href="#loan-products"
+                className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-md bg-white px-4 py-2.5 text-sm font-bold text-[hsl(var(--brand-navy))]"
+              >
+                Explore loans
+              </a>
             </div>
           </div>
         </section>
+
+        <FAQSection />
       </main>
 
       <PublicFooter />

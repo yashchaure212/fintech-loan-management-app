@@ -69,6 +69,7 @@ export const loanApplicationController = {
       const result = await loanApplicationService.submit(
         req.user.id,
         req.params.id,
+        req.body,
       );
 
       return res.status(200).json({

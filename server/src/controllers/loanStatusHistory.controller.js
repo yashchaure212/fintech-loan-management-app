@@ -3,10 +3,13 @@ import { loanStatusHistoryService } from "../services/loanStatusHistory.service.
 export const loanStatusHistoryController = {
   async create(req, res, next) {
     try {
-      const result = await loanStatusHistoryService.create({
-        ...req.body,
-        changedById: req.user.id,
-      });
+      const result = await loanStatusHistoryService.create(
+        {
+          ...req.body,
+          changedById: req.user.id,
+        },
+        req.user,
+      );
 
       return res.status(201).json({
         success: true,
@@ -22,6 +25,7 @@ export const loanStatusHistoryController = {
     try {
       const result = await loanStatusHistoryService.getTimeline(
         req.params.loanApplicationId,
+        req.user,
       );
 
       return res.status(200).json({

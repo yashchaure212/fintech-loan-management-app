@@ -1,7 +1,17 @@
 import { ZodError } from "zod";
+import { toPrismaAppError } from "../utils/prismaErrors.js";
 
 export const errorHandler = (err, req, res, next) => {
   console.error(err);
+
+  const prismaError = toPrismaAppError(err);
+
+  if (prismaError) {
+    return res.status(prismaError.statusCode).json({
+      success: false,
+      message: prismaError.message,
+    });
+  }
 
   // Zod validation errors
   if (err instanceof ZodError) {
@@ -12,9 +22,14 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // Custom application errors
+  // Operational application errors
   if (err.isOperational) {
-    return res.status(err.statusCode).json({
+    const statusCode =
+      Number.isInteger(err.statusCode) && err.statusCode >= 400
+        ? err.statusCode
+        : 500;
+
+    return res.status(statusCode).json({
       success: false,
       message: err.message,
     });

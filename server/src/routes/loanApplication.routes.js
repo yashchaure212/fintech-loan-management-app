@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { protect } from "../middlewares/auth.middleware.js";
+import { authorize } from "../middlewares/role.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { loanApplicationController } from "../controllers/loanApplication.controller.js";
 import {
@@ -10,35 +11,26 @@ import {
 
 const router = Router();
 
+router.use(protect, authorize("CUSTOMER"));
+
 router.post(
   "/",
-  protect,
   validate(createLoanApplicationSchema),
   loanApplicationController.create,
 );
 
-router.get(
-  "/",
-  protect,
-  loanApplicationController.getMyApplications,
-);
+router.get("/", loanApplicationController.getMyApplications);
 
-router.get(
-  "/:id",
-  protect,
-  loanApplicationController.getById,
-);
+router.get("/:id", loanApplicationController.getById);
 
 router.patch(
   "/:id",
-  protect,
   validate(updateLoanApplicationSchema),
   loanApplicationController.updateDraft,
 );
 
 router.post(
   "/:id/submit",
-  protect,
   validate(submitLoanApplicationSchema),
   loanApplicationController.submit,
 );

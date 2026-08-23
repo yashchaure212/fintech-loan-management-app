@@ -27,11 +27,12 @@ function SelectValue({ ...props }) {
 function SelectTrigger({ className, size = "default", children, ...props }) {
   return (
     <SelectPrimitive.Trigger
+      type="button"
       data-slot="select-trigger"
       data-size={size}
       className={cn(
         [
-          "flex w-full items-center justify-between gap-2",
+          "flex w-full min-w-0 items-center justify-between gap-2",
           "rounded-lg border border-input",
           "bg-card px-3",
           "text-sm text-foreground",
@@ -124,7 +125,7 @@ function SelectContent({
           className={cn(
             "p-0.5",
             position === "popper" &&
-              "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
+              "w-full min-w-[var(--radix-select-trigger-width)]",
           )}
         >
           {children}
@@ -161,6 +162,8 @@ function SelectItem({ className, children, ...props }) {
 
           "focus:bg-primary-soft",
           "focus:text-primary",
+          "data-[highlighted]:bg-primary-soft",
+          "data-[highlighted]:text-primary",
 
           "data-[disabled]:pointer-events-none",
           "data-[disabled]:opacity-50",

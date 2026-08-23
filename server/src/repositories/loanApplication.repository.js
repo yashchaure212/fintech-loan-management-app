@@ -131,7 +131,7 @@ export const loanApplicationRepository = {
       },
       include: {
         loanType: true,
-        educationLoan: {
+        studentLoan: {
           include: {
             parents: {
               include: {
@@ -145,6 +145,26 @@ export const loanApplicationRepository = {
             employment: true,
           },
         },
+        schoolLoan: {
+          include: {
+            institution: true,
+            coApplicants: {
+              include: {
+                currentAddress: true,
+                permanentAddress: true,
+                employment: {
+                  include: {
+                    employerAddress: true,
+                    businessAddress: true,
+                    landAddress: true,
+                    registrations: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        existingLoans: true,
         documents: true,
         statusHistory: {
           orderBy: {

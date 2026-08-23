@@ -32,8 +32,7 @@ const buttonVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
 
-        ghost:
-          "text-muted-foreground hover:bg-muted hover:text-foreground",
+        ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
 
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
@@ -81,27 +80,53 @@ function Button({
   size = "default",
   asChild = false,
   loading = false,
-  disabled,
+  disabled = false,
   children,
   ...props
 }) {
   const Comp = asChild ? Slot.Root : "button";
+
   const isDisabled = disabled || loading;
 
-  return (
-    <Comp
-      data-slot="button"
-      data-variant={variant}
-      data-size={size}
-      data-loading={loading ? "true" : undefined}
-      className={cn(buttonVariants({ variant, size, className }))}
-      disabled={isDisabled}
-      aria-busy={loading || undefined}
-      {...props}
-    >
-      {children}
-    </Comp>
-  );
+  const buttonProps = {
+    "data-slot": "button",
+    "data-variant": variant,
+    "data-size": size,
+    "data-loading": loading ? "true" : undefined,
+    className: cn(
+      buttonVariants({
+        variant,
+        size,
+        className,
+      }),
+    ),
+    "aria-busy": loading || undefined,
+    ...props,
+  };
+
+  // Native button:
+  // disabled is valid and should be passed.
+  if (!asChild) {
+    buttonProps.disabled = isDisabled;
+  }
+
+  // asChild:
+  // Don't pass the invalid `disabled` attribute to Link/other elements.
+  // Instead, prevent interaction through aria-disabled + pointer-events.
+  if (asChild && isDisabled) {
+    buttonProps["aria-disabled"] = true;
+    buttonProps.tabIndex = -1;
+    buttonProps.className = cn(
+      buttonProps.className,
+      "pointer-events-none opacity-50",
+    );
+    buttonProps.onClick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+  }
+
+  return <Comp {...buttonProps}>{children}</Comp>;
 }
 
 export { Button, buttonVariants };

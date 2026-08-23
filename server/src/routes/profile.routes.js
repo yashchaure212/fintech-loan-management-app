@@ -1,25 +1,18 @@
 import { Router } from "express";
 import { profileController } from "../controllers/profile.controller.js";
 import { protect } from "../middlewares/auth.middleware.js";
+import { authorize } from "../middlewares/role.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { createProfileSchema } from "../validations/profile.validation.js";
 
 const router = Router();
 
-router.post(
-  "/",
-  protect,
-  validate(createProfileSchema),
-  profileController.create,
-);
+router.use(protect, authorize("CUSTOMER"));
 
-router.get("/", protect, profileController.get);
+router.post("/", validate(createProfileSchema), profileController.create);
 
-router.put(
-  "/",
-  protect,
-  validate(createProfileSchema),
-  profileController.update,
-);
+router.get("/", profileController.get);
+
+router.put("/", validate(createProfileSchema), profileController.update);
 
 export default router;

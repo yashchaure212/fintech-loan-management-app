@@ -58,7 +58,7 @@ function FAQSection() {
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
             {faqs.map((faq, index) => {
               const open = openIndex === index;
 

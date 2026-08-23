@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 const cardVariants = cva(
   [
     "group/card flex flex-col gap-0 overflow-hidden",
-    "rounded-2xl border border-border/80",
+    "rounded-xl border border-border/80",
     "bg-card text-sm text-card-foreground",
     "shadow-[var(--shadow-card)]",
-    "transition-shadow duration-200",
+    "transition-all duration-200",
     "data-[size=sm]:rounded-lg",
     "has-[>img:first-child]:pt-0",
     "[&>img:first-child]:rounded-t-xl",
@@ -28,11 +28,10 @@ const cardVariants = cva(
   },
 );
 
-function Card({ className, size = "default", interactive = false, ...props }) {
+function Card({ className, interactive = false, ...props }) {
   return (
     <div
       data-slot="card"
-      data-size={size}
       data-interactive={interactive ? "true" : undefined}
       className={cn(cardVariants({ interactive }), className)}
       {...props}

@@ -9,6 +9,10 @@ export const createAddressSchema = z.object({
 
   city: z.string().min(2),
 
+  taluka: z.string().optional(),
+
+  district: z.string().optional(),
+
   state: z.string().min(2),
 
   pincode: z.string().regex(/^[1-9][0-9]{5}$/, "Invalid pincode"),

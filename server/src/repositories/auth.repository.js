@@ -78,6 +78,7 @@ export const authRepository = {
       },
     });
   },
+
   revokeRefreshToken(token) {
     return prisma.refreshToken.updateMany({
       where: {
@@ -89,9 +90,7 @@ export const authRepository = {
       },
     });
   },
-  deleteRefreshToken(token) {
-    return this.revokeRefreshToken(token);
-  },
+
   revokeAllRefreshTokens(userId) {
     return prisma.refreshToken.updateMany({
       where: {
@@ -102,9 +101,6 @@ export const authRepository = {
         revokedAt: new Date(),
       },
     });
-  },
-  deleteAllRefreshTokens(userId) {
-    return this.revokeAllRefreshTokens(userId);
   },
   deleteStaleRefreshTokens(userId) {
     return prisma.refreshToken.deleteMany({
@@ -169,10 +165,18 @@ export const authRepository = {
     });
   },
 
-  deletePasswordResetToken(token) {
+    deletePasswordResetToken(token) {
     return prisma.passwordResetToken.delete({
       where: {
         token,
+      },
+    });
+  },
+
+  deletePasswordResetTokensByUserId(userId) {
+    return prisma.passwordResetToken.deleteMany({
+      where: {
+        userId,
       },
     });
   },

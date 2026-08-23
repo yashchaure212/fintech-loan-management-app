@@ -25,10 +25,6 @@ export const profileService = {
   async getProfile(userId) {
     const profile = await profileRepository.findProfileByUserId(userId);
 
-    if (!profile) {
-      throw new AppError("Profile not found", 404);
-    }
-
     return profile;
   },
 

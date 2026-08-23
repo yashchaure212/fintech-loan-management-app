@@ -113,6 +113,7 @@ enum DocumentOwnerType {
   FATHER
   MOTHER
   CO_APPLICANT
+  GUARDIAN
 }
 
 enum DocumentType {
@@ -136,6 +137,14 @@ enum DocumentType {
   PREVIOUS_DEGREE_CERTIFICATE
   PASSPORT
   OTHER
+  BIRTH_CERTIFICATE
+  ADDRESS_PROOF
+  SCHOOL_ADMISSION_PROOF
+  PREVIOUS_CLASS_RESULT
+  UDYAM_CERTIFICATE
+  LAND_LEASE_PROOF
+  EXISTING_LOAN_STATEMENT
+  FINANCIAL_STATEMENT
 }
 
 enum DocumentStatus {
@@ -153,6 +162,7 @@ model LoanDocument {
   documentType DocumentType
   documentUrl String
   publicId String?
+  resourceType String @default("image")
   status DocumentStatus @default(PENDING)
   rejectionReason String?
 
@@ -197,10 +207,18 @@ model Address {
   line1 String
   line2 String?
   city String
+  taluka String?
+  district String?
   state String
   pincode String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  parentCurrentAddressFor   ParentDetails[]    @relation("ParentCurrentAddress")
+  parentPermanentAddressFor ParentDetails[]    @relation("ParentPermanentAddress")
+  employerAddressFor        ParentEmployment[] @relation("EmployerAddress")
+  businessAddressFor        ParentEmployment[] @relation("BusinessAddress")
+  landAddressFor            ParentEmployment[] @relation("LandAddress")
 
   @@index([userId])
   @@map("addresses")
@@ -272,8 +290,18 @@ model LoanApplication {
   statusHistory LoanApplicationStatusHistory[]
   emiSchedules EmiSchedule[]
   documents LoanDocument[]
-  educationLoan EducationLoanApplication?
+  studentLoan StudentLoanApplication?
   personalLoan PersonalLoanApplication?
+  schoolLoan SchoolStudentLoanApplication?
+  existingLoans ExistingLoan[]
+
+  infoAccuracyConsent Boolean @default(false)
+  infoVerificationConsent Boolean @default(false)
+  documentVerificationConsent Boolean @default(false)
+  termsAccepted Boolean @default(false)
+  privacyPolicyAccepted Boolean @default(false)
+  consentedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -289,7 +317,7 @@ enum AdmissionStatus {
   CONFIRMED
 }
 
-model EducationLoanApplication {
+model StudentLoanApplication {
   id String @id @default(uuid())
 
   loanApplicationId String @unique
@@ -313,19 +341,30 @@ model EducationLoanApplication {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("education_loan_applications")
+  @@map("student_loan_applications")
 }
 
 enum ParentRelation {
   FATHER
   MOTHER
+  GUARDIAN
+  OTHER
+}
+
+enum MaritalStatus {
+  SINGLE
+  MARRIED
+  OTHER
 }
 
 model ParentDetails {
   id String @id @default(uuid())
 
-  educationLoanApplicationId String
-  educationLoanApplication EducationLoanApplication @relation(fields: [educationLoanApplicationId], references: [id], onDelete: Cascade)
+  studentLoanApplicationId String?
+  studentLoanApplication StudentLoanApplication? @relation(fields: [studentLoanApplicationId], references: [id], onDelete: Cascade)
+
+  schoolLoanApplicationId String?
+  schoolLoanApplication SchoolStudentLoanApplication? @relation(fields: [schoolLoanApplicationId], references: [id], onDelete: Cascade)
 
   relation ParentRelation
   fullName String
@@ -338,13 +377,29 @@ model ParentDetails {
   bankAccountNumber String?
   ifscCode String?
 
+  gender Gender?
+  dateOfBirth DateTime?
+  maritalStatus MaritalStatus?
+  numberOfDependents Int?
+  numberOfEarningMembers Int?
+  familyMonthlyIncome Decimal? @db.Decimal(12, 2)
+
+  currentAddressId String?
+  currentAddress Address? @relation("ParentCurrentAddress", fields: [currentAddressId], references: [id])
+  permanentAddressId String?
+  permanentAddress Address? @relation("ParentPermanentAddress", fields: [permanentAddressId], references: [id])
+  sameAsCurrentAddress Boolean @default(false)
+  yearsAtCurrentAddress Int?
+
   employment ParentEmployment?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([educationLoanApplicationId, relation])
-  @@index([educationLoanApplicationId])
+  @@unique([studentLoanApplicationId, relation])
+  @@unique([schoolLoanApplicationId, relation])
+  @@index([studentLoanApplicationId])
+  @@index([schoolLoanApplicationId])
 
   @@map("parent_details")
 }
@@ -360,17 +415,42 @@ model ParentEmployment {
   designation String?
   monthlyIncome Decimal? @db.Decimal(12, 2)
   experienceYears Int?
+  industryType String?
+  dateOfJoining DateTime?
+  salaryFrequency String?
+  previousYearIncome Decimal? @db.Decimal(12, 2)
+  salaryAccountBank String?
+  employerAddressId String?
+  employerAddress Address? @relation("EmployerAddress", fields: [employerAddressId], references: [id])
 
   // Business
   businessName String?
   businessType String?
   annualTurnover Decimal? @db.Decimal(15, 2)
   annualIncome Decimal? @db.Decimal(12, 2)
+  businessCategory String?
+  businessStartDate DateTime?
+  numberOfEmployees Int?
+  numberOfBranches Int?
+  yearsAtBusinessLocation Int?
+  currentYearEstimatedIncome Decimal? @db.Decimal(12, 2)
+  businessAddressId String?
+  businessAddress Address? @relation("BusinessAddress", fields: [businessAddressId], references: [id])
+  registrations BusinessRegistration[]
 
   // Farmer
   landHoldingAcres Decimal? @db.Decimal(10, 2)
   cropType String?
   agriculturalIncome Decimal? @db.Decimal(12, 2)
+  landArea Decimal? @db.Decimal(10, 2)
+  landUnit String?
+  landOwnership LandOwnership?
+  cultivatedArea Decimal? @db.Decimal(10, 2)
+  otherCropTypes String?
+  irrigationType String?
+  landLocationVillage String?
+  landAddressId String?
+  landAddress Address? @relation("LandAddress", fields: [landAddressId], references: [id])
 
   // Contract
   employerName String?
@@ -383,6 +463,171 @@ model ParentEmployment {
   updatedAt DateTime @updatedAt
 
   @@map("parent_employment")
+}
+
+enum LandOwnership {
+  OWNED
+  LEASED
+  PARTIALLY_OWNED_LEASED
+}
+
+enum SchoolType {
+  GOVERNMENT
+  PRIVATE
+  OTHER
+}
+
+enum SchoolClass {
+  CLASS_1
+  CLASS_2
+  CLASS_3
+  CLASS_4
+  CLASS_5
+  CLASS_6
+  CLASS_7
+  CLASS_8
+  CLASS_9
+  CLASS_10
+  CLASS_11
+  CLASS_12
+}
+
+model Institution {
+  id String @id @default(uuid())
+
+  name String
+  schoolId String? @unique
+  schoolType SchoolType
+  city String
+  taluka String?
+  district String?
+  state String
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schoolLoanApplications SchoolStudentLoanApplication[]
+
+  @@index([name])
+  @@index([city])
+  @@map("institutions")
+}
+
+model SchoolStudentLoanApplication {
+  id String @id @default(uuid())
+
+  loanApplicationId String @unique
+  loanApplication LoanApplication @relation(fields: [loanApplicationId], references: [id], onDelete: Cascade)
+
+  studentName String
+  dateOfBirth DateTime
+  gender Gender
+  mobile String?
+  email String?
+  aadhaarNumber String?
+  panNumber String?
+
+  currentSchoolName String
+  institutionId String?
+  institution Institution? @relation(fields: [institutionId], references: [id])
+  schoolType SchoolType?
+  currentClass SchoolClass
+  academicYear String
+  continuingSameSchool Boolean @default(true)
+
+  previousSchoolName String?
+  newSchoolName String?
+  newInstitutionId String?
+  expectedJoiningDate DateTime?
+
+  previousClass SchoolClass?
+  previousAcademicYear String?
+  previousClassPercentage Decimal? @db.Decimal(5, 2)
+
+  loanPurpose String?
+  expectedDisbursementDate DateTime?
+  tuitionFees Decimal? @db.Decimal(12, 2)
+  admissionFees Decimal? @db.Decimal(12, 2)
+  examinationFees Decimal? @db.Decimal(12, 2)
+  booksAmount Decimal? @db.Decimal(12, 2)
+  uniformAmount Decimal? @db.Decimal(12, 2)
+  equipmentAmount Decimal? @db.Decimal(12, 2)
+  transportAmount Decimal? @db.Decimal(12, 2)
+  hostelAmount Decimal? @db.Decimal(12, 2)
+  otherExpensesAmount Decimal? @db.Decimal(12, 2)
+  familyContribution Decimal? @db.Decimal(12, 2)
+  scholarshipAmount Decimal? @db.Decimal(12, 2)
+  otherFundingAmount Decimal? @db.Decimal(12, 2)
+
+  hasExistingLoans Boolean @default(false)
+
+  coApplicants ParentDetails[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([institutionId])
+  @@map("school_student_loan_applications")
+}
+
+enum BusinessRegistrationType {
+  GST
+  UDYAM
+  SHOP_ESTABLISHMENT
+  TRADE_LICENSE
+  OTHER
+}
+
+model BusinessRegistration {
+  id String @id @default(uuid())
+
+  parentEmploymentId String
+  parentEmployment ParentEmployment @relation(fields: [parentEmploymentId], references: [id], onDelete: Cascade)
+
+  registrationType BusinessRegistrationType
+  registrationNumber String
+  issueDate DateTime?
+  expiryDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentEmploymentId])
+  @@map("business_registrations")
+}
+
+enum ExistingLoanStatus {
+  ACTIVE
+  CLOSED
+  DELINQUENT
+}
+
+model ExistingLoan {
+  id String @id @default(uuid())
+
+  loanApplicationId String
+  loanApplication LoanApplication @relation(fields: [loanApplicationId], references: [id], onDelete: Cascade)
+
+  loanTypeLabel String
+  lenderName String
+  loanAccountNumber String?
+  originalAmount Decimal @db.Decimal(15, 2)
+  outstandingAmount Decimal @db.Decimal(15, 2)
+  emiAmount Decimal @db.Decimal(12, 2)
+  interestRate Decimal? @db.Decimal(5, 2)
+  startDate DateTime?
+  originalTenureMonths Int?
+  remainingTenureMonths Int?
+  missedPaymentsCount Int? @default(0)
+  lastEmiPaymentDate DateTime?
+  status ExistingLoanStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([loanApplicationId])
+  @@map("existing_loans")
 }
 
 enum PersonalLoanPurpose {

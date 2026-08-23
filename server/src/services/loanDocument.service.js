@@ -2,7 +2,7 @@ import { loanDocumentRepository } from "../repositories/loanDocument.repository.
 import { loanApplicationRepository } from "../repositories/loanApplication.repository.js";
 import { loanRequiredDocumentService } from "./loanRequiredDocument.service.js";
 import { loanValidationService } from "./loanValidation.service.js";
-import { uploadFile, deleteFile } from "./file.service.js";
+import { uploadFile, deleteFile, withSignedDocumentUrl } from "./file.service.js";
 import AppError from "../utils/AppError.js";
 
 export const loanDocumentService = {
@@ -126,8 +126,9 @@ export const loanDocumentService = {
         loanApplicationId: data.loanApplicationId,
         ownerType: data.ownerType,
         documentType: data.documentType,
-        documentUrl: uploadedFile.url,
+        documentUrl: "authenticated",
         publicId: uploadedFile.publicId,
+        resourceType: uploadedFile.resourceType,
         status: "PENDING",
         rejectionReason: null,
       });
@@ -136,11 +137,14 @@ export const loanDocumentService = {
         await loanDocumentRepository.delete(rejectedDocument.id).catch(() => {});
 
         if (rejectedDocument.publicId) {
-          await deleteFile(rejectedDocument.publicId).catch(() => {});
+          await deleteFile(
+            rejectedDocument.publicId,
+            rejectedDocument.resourceType,
+          ).catch(() => {});
         }
       }
 
-      return document;
+      return withSignedDocumentUrl(document);
     } catch (error) {
       /*
        * If database creation fails, remove the uploaded
@@ -148,7 +152,9 @@ export const loanDocumentService = {
        */
 
       if (uploadedFile.publicId) {
-        await deleteFile(uploadedFile.publicId).catch(() => {});
+        await deleteFile(uploadedFile.publicId, uploadedFile.resourceType).catch(
+          () => {},
+        );
       }
 
       throw error;
@@ -163,7 +169,10 @@ export const loanDocumentService = {
       throw new AppError("Loan application not found", 404);
     }
 
-    return loanDocumentRepository.findByApplicationId(loanApplicationId);
+    const documents =
+      await loanDocumentRepository.findByApplicationId(loanApplicationId);
+
+    return documents.map(withSignedDocumentUrl);
   },
 
   async getById(userId, documentId) {
@@ -177,7 +186,7 @@ export const loanDocumentService = {
       throw new AppError("You are not allowed to access this document", 403);
     }
 
-    return document;
+    return withSignedDocumentUrl(document);
   },
 
   async verify(documentId) {
@@ -191,10 +200,12 @@ export const loanDocumentService = {
       throw new AppError("Document is already verified", 400);
     }
 
-    return loanDocumentRepository.update(documentId, {
-      status: "VERIFIED",
-      rejectionReason: null,
-    });
+    return withSignedDocumentUrl(
+      await loanDocumentRepository.update(documentId, {
+        status: "VERIFIED",
+        rejectionReason: null,
+      }),
+    );
   },
 
   async reject(documentId, rejectionReason) {
@@ -208,10 +219,12 @@ export const loanDocumentService = {
       throw new AppError("Verified documents cannot be rejected", 400);
     }
 
-    return loanDocumentRepository.update(documentId, {
-      status: "REJECTED",
-      rejectionReason,
-    });
+    return withSignedDocumentUrl(
+      await loanDocumentRepository.update(documentId, {
+        status: "REJECTED",
+        rejectionReason,
+      }),
+    );
   },
 
   async delete(userId, documentId) {
@@ -238,7 +251,7 @@ export const loanDocumentService = {
     }
 
     if (document.publicId) {
-      await deleteFile(document.publicId);
+      await deleteFile(document.publicId, document.resourceType);
     }
 
     return loanDocumentRepository.delete(documentId);

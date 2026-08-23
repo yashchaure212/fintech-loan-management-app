@@ -1,7 +1,10 @@
 import AppError from "../utils/AppError.js";
 import { loanRequiredDocumentService } from "./loanRequiredDocument.service.js";
 
-const EDUCATION_LOAN_CODE = "EDUCATION_LOAN";
+const STUDENT_LOAN_CODE = "STUDENT_LOAN";
+const SCHOOL_STUDENT_LOAN_CODE = "SCHOOL_STUDENT_LOAN";
+const STUDENT_LOAN_TOTAL_STEPS = 5;
+const SCHOOL_LOAN_TOTAL_STEPS = 7;
 const DOCUMENT_CORRECTION_STATUSES = new Set(["SUBMITTED", "UNDER_REVIEW"]);
 
 export const loanValidationService = {
@@ -145,9 +148,13 @@ export const loanValidationService = {
     }
 
     if (employmentType === "FARMER") {
+      const hasLand =
+        (employment.landHoldingAcres !== undefined &&
+          employment.landHoldingAcres !== null) ||
+        (employment.landArea !== undefined && employment.landArea !== null);
+
       if (
-        employment.landHoldingAcres === undefined ||
-        employment.landHoldingAcres === null ||
+        !hasLand ||
         !employment.cropType ||
         employment.agriculturalIncome === undefined ||
         employment.agriculturalIncome === null
@@ -184,57 +191,72 @@ export const loanValidationService = {
     const uniqueRelations = new Set(relations);
 
     if (uniqueRelations.size !== relations.length) {
-      throw new AppError("Father or Mother can only be added once", 400);
+      throw new AppError(
+        "Each co-applicant relation (Father, Mother, Guardian, Other) can only be added once",
+        400,
+      );
     }
 
-    if (!relations.includes("FATHER") && !relations.includes("MOTHER")) {
-      throw new AppError("At least one parent is required", 400);
+    const coApplicantRelations = ["FATHER", "MOTHER", "GUARDIAN", "OTHER"];
+
+    if (!relations.some((relation) => coApplicantRelations.includes(relation))) {
+      throw new AppError("At least one parent or guardian is required", 400);
     }
   },
 
-  isEducationLoan(application) {
-    return application?.loanType?.code === EDUCATION_LOAN_CODE;
+  isStudentLoan(application) {
+    return application?.loanType?.code === STUDENT_LOAN_CODE;
+  },
+
+  isSchoolLoan(application) {
+    return application?.loanType?.code === SCHOOL_STUDENT_LOAN_CODE;
+  },
+
+  totalStepsFor(application) {
+    return this.isSchoolLoan(application)
+      ? SCHOOL_LOAN_TOTAL_STEPS
+      : STUDENT_LOAN_TOTAL_STEPS;
   },
 
   isStep1Complete(application) {
     return Boolean(application.loanAmount && application.tenureMonths);
   },
 
-  isEducationLoanDetailsComplete(educationLoan) {
-    if (!educationLoan) {
+  isStudentLoanDetailsComplete(studentLoan) {
+    if (!studentLoan) {
       return false;
     }
 
     return Boolean(
-      educationLoan.studentName &&
-        educationLoan.dateOfBirth &&
-        educationLoan.gender &&
-        educationLoan.mobile &&
-        educationLoan.email &&
-        educationLoan.courseName &&
-        educationLoan.collegeName &&
-        educationLoan.universityName &&
-        educationLoan.studyCountry &&
-        educationLoan.courseDurationMonths &&
-        educationLoan.admissionStatus &&
-        educationLoan.estimatedCourseFee,
+      studentLoan.studentName &&
+        studentLoan.dateOfBirth &&
+        studentLoan.gender &&
+        studentLoan.mobile &&
+        studentLoan.email &&
+        studentLoan.courseName &&
+        studentLoan.collegeName &&
+        studentLoan.universityName &&
+        studentLoan.studyCountry &&
+        studentLoan.courseDurationMonths &&
+        studentLoan.admissionStatus &&
+        studentLoan.estimatedCourseFee,
     );
   },
 
   isStep2Complete(application) {
-    if (!this.isEducationLoan(application)) {
+    if (!this.isStudentLoan(application)) {
       return true;
     }
 
-    return this.isEducationLoanDetailsComplete(application.educationLoan);
+    return this.isStudentLoanDetailsComplete(application.studentLoan);
   },
 
   isStep3Complete(application) {
-    if (!this.isEducationLoan(application)) {
+    if (!this.isStudentLoan(application)) {
       return true;
     }
 
-    const parents = application.educationLoan?.parents || [];
+    const parents = application.studentLoan?.parents || [];
 
     if (parents.length === 0) {
       return false;
@@ -267,7 +289,93 @@ export const loanValidationService = {
     return missingDocuments.length === 0;
   },
 
+  isSchoolStudentDetailsComplete(application) {
+    return Boolean(application.schoolLoan);
+  },
+
+  isSchoolCoApplicantsComplete(application) {
+    const coApplicants = application.schoolLoan?.coApplicants || [];
+
+    if (coApplicants.length === 0) {
+      return false;
+    }
+
+    try {
+      this.validateParentRelations(coApplicants);
+
+      for (const person of coApplicants) {
+        if (
+          !person.fullName ||
+          !person.mobile ||
+          !person.gender ||
+          !person.dateOfBirth ||
+          !person.currentAddressId ||
+          (!person.sameAsCurrentAddress && !person.permanentAddressId)
+        ) {
+          return false;
+        }
+      }
+    } catch {
+      return false;
+    }
+
+    return true;
+  },
+
+  isSchoolEmploymentComplete(application) {
+    const coApplicants = application.schoolLoan?.coApplicants || [];
+
+    if (coApplicants.length === 0) {
+      return false;
+    }
+
+    try {
+      for (const person of coApplicants) {
+        this.validateParentEmployment(person.employment);
+      }
+    } catch {
+      return false;
+    }
+
+    return true;
+  },
+
+  isSchoolExistingLoansComplete(application) {
+    if (!application.schoolLoan?.hasExistingLoans) {
+      return true;
+    }
+
+    return (application.existingLoans || []).length > 0;
+  },
+
+  isSchoolLoanRequirementComplete(application) {
+    return this.isStep1Complete(application);
+  },
+
+  isSchoolDocumentsComplete(application, requiredDocuments, uploadedDocuments) {
+    return this.isStep4Complete(
+      application,
+      requiredDocuments,
+      uploadedDocuments,
+    );
+  },
+
   getCompletenessState(application, requiredDocuments, uploadedDocuments) {
+    if (this.isSchoolLoan(application)) {
+      return {
+        step1: this.isSchoolStudentDetailsComplete(application),
+        step2: this.isSchoolCoApplicantsComplete(application),
+        step3: this.isSchoolEmploymentComplete(application),
+        step4: this.isSchoolExistingLoansComplete(application),
+        step5: this.isSchoolLoanRequirementComplete(application),
+        step6: this.isSchoolDocumentsComplete(
+          application,
+          requiredDocuments,
+          uploadedDocuments,
+        ),
+      };
+    }
+
     return {
       step1: this.isStep1Complete(application),
       step2: this.isStep2Complete(application),
@@ -286,6 +394,16 @@ export const loanValidationService = {
       requiredDocuments,
       uploadedDocuments,
     );
+
+    if (this.isSchoolLoan(application)) {
+      if (!state.step1) return 1;
+      if (!state.step2) return 2;
+      if (!state.step3) return 3;
+      if (!state.step4) return 4;
+      if (!state.step5) return 5;
+      if (!state.step6) return 6;
+      return 7;
+    }
 
     if (!state.step1) {
       return 1;
@@ -312,7 +430,8 @@ export const loanValidationService = {
     requiredDocuments,
     uploadedDocuments,
   ) {
-    const normalizedStep = Math.min(Math.max(Number(requestedStep), 1), 5);
+    const ceiling = this.totalStepsFor(application);
+    const normalizedStep = Math.min(Math.max(Number(requestedStep), 1), ceiling);
     const maxAllowedStep = this.getMaxAllowedStep(
       application,
       requiredDocuments,
@@ -330,17 +449,83 @@ export const loanValidationService = {
   },
 
   resolveEligibilitySubject(application) {
-    if (this.isEducationLoan(application)) {
-      const educationLoan = application.educationLoan;
+    if (this.isSchoolLoan(application)) {
+      const schoolLoan = application.schoolLoan;
 
-      if (!educationLoan) {
+      if (!schoolLoan) {
         throw new AppError(
-          "Education loan details are required before submission",
+          "School details are required before submission",
           400,
         );
       }
 
-      const parents = educationLoan.parents || [];
+      const coApplicants = schoolLoan.coApplicants || [];
+      const primaryCoApplicant =
+        coApplicants.find((person) => person.isCoApplicant) ||
+        coApplicants.find((person) => person.employment) ||
+        null;
+
+      if (!primaryCoApplicant?.employment) {
+        throw new AppError(
+          "Co-applicant employment details are required for eligibility checks",
+          400,
+        );
+      }
+
+      if (!primaryCoApplicant.dateOfBirth) {
+        throw new AppError(
+          "Co-applicant date of birth is required for eligibility checks",
+          400,
+        );
+      }
+
+      const employment = primaryCoApplicant.employment;
+      let monthlyIncome = 0;
+
+      if (
+        employment.monthlyIncome !== null &&
+        employment.monthlyIncome !== undefined
+      ) {
+        monthlyIncome = Number(employment.monthlyIncome);
+      } else if (
+        employment.annualIncome !== null &&
+        employment.annualIncome !== undefined
+      ) {
+        monthlyIncome = Number(employment.annualIncome) / 12;
+      } else if (
+        employment.agriculturalIncome !== null &&
+        employment.agriculturalIncome !== undefined
+      ) {
+        monthlyIncome = Number(employment.agriculturalIncome) / 12;
+      } else if (
+        employment.currentYearEstimatedIncome !== null &&
+        employment.currentYearEstimatedIncome !== undefined
+      ) {
+        monthlyIncome = Number(employment.currentYearEstimatedIncome) / 12;
+      }
+
+      return {
+        profile: {
+          dateOfBirth: primaryCoApplicant.dateOfBirth,
+        },
+        employment: {
+          monthlyIncome,
+          experienceYears: employment.experienceYears ?? null,
+        },
+      };
+    }
+
+    if (this.isStudentLoan(application)) {
+      const studentLoan = application.studentLoan;
+
+      if (!studentLoan) {
+        throw new AppError(
+          "Student loan details are required before submission",
+          400,
+        );
+      }
+
+      const parents = studentLoan.parents || [];
       const coApplicant = parents.find((parent) => parent.isCoApplicant);
       const incomeParent =
         coApplicant || parents.find((parent) => parent.employment) || null;
@@ -374,7 +559,7 @@ export const loanValidationService = {
 
       return {
         profile: {
-          dateOfBirth: educationLoan.dateOfBirth,
+          dateOfBirth: studentLoan.dateOfBirth,
         },
         employment: {
           monthlyIncome,
@@ -422,26 +607,26 @@ export const loanValidationService = {
     );
   },
 
-  validateEducationLoanCompleteness(application) {
-    if (!this.isEducationLoan(application)) {
+  validateStudentLoanCompleteness(application) {
+    if (!this.isStudentLoan(application)) {
       return;
     }
 
-    if (!application.educationLoan) {
+    if (!application.studentLoan) {
       throw new AppError(
-        "Education loan details are required before submission",
+        "Student loan details are required before submission",
         400,
       );
     }
 
-    if (!this.isEducationLoanDetailsComplete(application.educationLoan)) {
+    if (!this.isStudentLoanDetailsComplete(application.studentLoan)) {
       throw new AppError(
-        "Complete all education loan student details before submission",
+        "Complete all student loan student details before submission",
         400,
       );
     }
 
-    const parents = application.educationLoan.parents || [];
+    const parents = application.studentLoan.parents || [];
 
     this.validateParentRelations(parents);
 
@@ -457,6 +642,70 @@ export const loanValidationService = {
     }
   },
 
+  validateSchoolLoanCompleteness(application) {
+    if (!this.isSchoolLoan(application)) {
+      return;
+    }
+
+    if (!application.schoolLoan) {
+      throw new AppError(
+        "Student and school details are required before submission",
+        400,
+      );
+    }
+
+    const coApplicants = application.schoolLoan.coApplicants || [];
+
+    this.validateParentRelations(coApplicants);
+
+    for (const person of coApplicants) {
+      if (!person.fullName || !person.mobile) {
+        throw new AppError(
+          "Each co-applicant must include full name and mobile number",
+          400,
+        );
+      }
+
+      if (!person.dateOfBirth) {
+        throw new AppError(
+          "Each co-applicant's date of birth is required",
+          400,
+        );
+      }
+
+      this.validateParentEmployment(person.employment);
+    }
+
+    if (
+      application.schoolLoan.hasExistingLoans &&
+      (application.existingLoans || []).length === 0
+    ) {
+      throw new AppError(
+        "At least one existing loan is required when existing loans are declared",
+        400,
+      );
+    }
+
+    const consentFields = [
+      "infoAccuracyConsent",
+      "infoVerificationConsent",
+      "documentVerificationConsent",
+      "termsAccepted",
+      "privacyPolicyAccepted",
+    ];
+
+    const missingConsent = consentFields.some(
+      (field) => application[field] !== true,
+    );
+
+    if (missingConsent) {
+      throw new AppError(
+        "All declarations and consents must be accepted before submission",
+        400,
+      );
+    }
+  },
+
   validateApplicationReadyForSubmit(
     application,
     configuration,
@@ -464,6 +713,37 @@ export const loanValidationService = {
     requiredDocuments,
     uploadedDocuments,
   ) {
+    if (this.isSchoolLoan(application)) {
+      if (!this.isSchoolLoanRequirementComplete(application)) {
+        throw new AppError(
+          "Loan amount and tenure are required before submission",
+          400,
+        );
+      }
+
+      this.validateLoanAmount(configuration, Number(application.loanAmount));
+      this.validateTenure(configuration, application.tenureMonths);
+
+      this.validateSchoolLoanCompleteness(application);
+      this.validateApplicationEligibility(application, eligibilityRule);
+
+      const state = this.getCompletenessState(
+        application,
+        requiredDocuments,
+        uploadedDocuments,
+      );
+
+      if (!state.step6) {
+        throw new AppError(
+          "Upload all required documents before submission",
+          400,
+        );
+      }
+
+      this.validateDocuments(requiredDocuments, uploadedDocuments);
+      return;
+    }
+
     if (!this.isStep1Complete(application)) {
       throw new AppError("Loan amount and tenure are required before submission", 400);
     }
@@ -471,7 +751,7 @@ export const loanValidationService = {
     this.validateLoanAmount(configuration, Number(application.loanAmount));
     this.validateTenure(configuration, application.tenureMonths);
 
-    this.validateEducationLoanCompleteness(application);
+    this.validateStudentLoanCompleteness(application);
     this.validateApplicationEligibility(application, eligibilityRule);
 
     const state = this.getCompletenessState(

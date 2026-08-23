@@ -1,14 +1,26 @@
 import { authService } from "../services/auth.service.js";
+import {
+  clearRefreshCookie,
+  readRefreshToken,
+  setRefreshCookie,
+} from "../utils/cookies.js";
+
+function sessionResponse(result) {
+  const { refreshToken, ...publicData } = result;
+  void refreshToken;
+  return publicData;
+}
 
 export const authController = {
   async register(req, res, next) {
     try {
       const result = await authService.register(req.body);
+      setRefreshCookie(res, result.refreshToken);
 
       return res.status(201).json({
         success: true,
         message: "User registered successfully",
-        data: result,
+        data: sessionResponse(result),
       });
     } catch (error) {
       next(error);
@@ -18,11 +30,12 @@ export const authController = {
   async login(req, res, next) {
     try {
       const result = await authService.login(req.body);
+      setRefreshCookie(res, result.refreshToken);
 
       return res.status(200).json({
         success: true,
         message: "Login successful",
-        data: result,
+        data: sessionResponse(result),
       });
     } catch (error) {
       next(error);
@@ -31,27 +44,32 @@ export const authController = {
 
   async refreshToken(req, res, next) {
     try {
-      const result = await authService.refreshToken(req.body.refreshToken);
+      const result = await authService.refreshToken(readRefreshToken(req));
+      setRefreshCookie(res, result.refreshToken);
 
       return res.status(200).json({
         success: true,
-
         message: "Token refreshed successfully",
-
-        data: result,
+        data: {
+          accessToken: result.accessToken,
+        },
       });
     } catch (error) {
+      if (error?.clearRefreshCookie) {
+        clearRefreshCookie(res);
+      }
+
       next(error);
     }
   },
 
   async logout(req, res, next) {
     try {
-      await authService.logout(req.body.refreshToken);
+      await authService.logout(readRefreshToken(req));
+      clearRefreshCookie(res);
 
       return res.status(200).json({
         success: true,
-
         message: "Logout successful",
       });
     } catch (error) {
@@ -65,9 +83,7 @@ export const authController = {
 
       return res.status(200).json({
         success: true,
-
         message: "Current user fetched successfully",
-
         data: {
           user,
         },
@@ -80,10 +96,10 @@ export const authController = {
   async changePassword(req, res, next) {
     try {
       await authService.changePassword(req.user.id, req.body);
+      clearRefreshCookie(res);
 
       return res.status(200).json({
         success: true,
-
         message: "Password changed successfully",
       });
     } catch (error) {
@@ -97,10 +113,7 @@ export const authController = {
 
       res.status(200).json({
         success: true,
-
-        message: "Reset token generated",
-
-        data: result,
+        message: result.message,
       });
     } catch (error) {
       next(error);
@@ -110,10 +123,10 @@ export const authController = {
   async resetPassword(req, res, next) {
     try {
       await authService.resetPassword(req.body);
+      clearRefreshCookie(res);
 
       res.status(200).json({
         success: true,
-
         message: "Password reset successful",
       });
     } catch (error) {

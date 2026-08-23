@@ -108,7 +108,7 @@ function HowItWorksSection() {
             return (
               <article
                 key={step.number}
-                className={`relative z-10 rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6 ${tone.shell}`}
+                className={`relative z-10 rounded-xl border border-border bg-card p-5 shadow-card sm:p-6 ${tone.shell}`}
               >
                 <div className="flex items-center justify-between">
                   <span className={`text-xs font-bold tracking-[0.14em] ${tone.number}`}>

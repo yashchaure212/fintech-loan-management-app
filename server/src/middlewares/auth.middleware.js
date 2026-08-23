@@ -14,10 +14,10 @@ export const protect = async (req, res, next) => {
 
     // Expected format:
     // Bearer token
-    const token = authHeader.split(" ")[1];
+    const [scheme, token] = authHeader.split(" ");
 
-    if (!token) {
-      throw new AppError("Access token missing", 401);
+    if (scheme !== "Bearer" || !token) {
+      throw new AppError("Invalid authorization header", 401);
     }
 
     // Verify JWT

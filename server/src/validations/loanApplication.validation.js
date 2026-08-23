@@ -9,7 +9,7 @@ export const updateLoanApplicationSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(5)
+    .max(7)
     .optional(),
 
   loanAmount: z
@@ -24,5 +24,10 @@ export const updateLoanApplicationSchema = z.object({
     .optional(),
 });
 
-export const submitLoanApplicationSchema =
-  z.object({});
+export const submitLoanApplicationSchema = z.object({
+  infoAccuracyConsent: z.boolean().optional(),
+  infoVerificationConsent: z.boolean().optional(),
+  documentVerificationConsent: z.boolean().optional(),
+  termsAccepted: z.boolean().optional(),
+  privacyPolicyAccepted: z.boolean().optional(),
+});

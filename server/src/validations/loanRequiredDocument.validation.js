@@ -21,6 +21,14 @@ const documentTypeEnum = z.enum([
   "PREVIOUS_DEGREE_CERTIFICATE",
   "PASSPORT",
   "OTHER",
+  "BIRTH_CERTIFICATE",
+  "ADDRESS_PROOF",
+  "SCHOOL_ADMISSION_PROOF",
+  "PREVIOUS_CLASS_RESULT",
+  "UDYAM_CERTIFICATE",
+  "LAND_LEASE_PROOF",
+  "EXISTING_LOAN_STATEMENT",
+  "FINANCIAL_STATEMENT",
 ]);
 
 const ownerTypeEnum = z.enum([
@@ -29,6 +37,7 @@ const ownerTypeEnum = z.enum([
   "FATHER",
   "MOTHER",
   "CO_APPLICANT",
+  "GUARDIAN",
 ]);
 
 const employmentTypeEnum = z.enum([

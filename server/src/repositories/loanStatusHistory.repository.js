@@ -28,10 +28,15 @@ export const loanStatusHistoryRepository = {
     });
   },
 
-  loanApplicationExists(id) {
+  findLoanApplicationForAccess(id) {
     return prisma.loanApplication.findUnique({
       where: {
         id,
+      },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
       },
     });
   },

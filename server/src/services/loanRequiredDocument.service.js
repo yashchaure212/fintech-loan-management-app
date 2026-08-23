@@ -26,8 +26,8 @@ function buildEmploymentContext(application) {
    * Education loan
    */
 
-  if (application.educationLoan?.parents?.length) {
-    for (const parent of application.educationLoan.parents) {
+  if (application.studentLoan?.parents?.length) {
+    for (const parent of application.studentLoan.parents) {
       if (!parent.employment?.employmentType) {
         continue;
       }
@@ -57,6 +57,31 @@ function buildEmploymentContext(application) {
     }
   }
 
+  if (application.schoolLoan?.coApplicants?.length) {
+    for (const person of application.schoolLoan.coApplicants) {
+      if (!person.employment?.employmentType) {
+        continue;
+      }
+
+      const ownerType =
+        person.relation === "FATHER"
+          ? "FATHER"
+          : person.relation === "MOTHER"
+            ? "MOTHER"
+            : person.relation === "GUARDIAN"
+              ? "GUARDIAN"
+              : null;
+
+      if (ownerType) {
+        context.set(ownerType, person.employment.employmentType);
+      }
+
+      if (person.isCoApplicant) {
+        context.set("CO_APPLICANT", person.employment.employmentType);
+      }
+    }
+  }
+
   /*
    * Personal loan
    *
@@ -76,10 +101,10 @@ function buildEmploymentContext(application) {
 function buildOwnerContext(application) {
   const owners = new Set();
 
-  if (application.educationLoan) {
+  if (application.studentLoan) {
     owners.add("STUDENT");
 
-    for (const parent of application.educationLoan.parents || []) {
+    for (const parent of application.studentLoan.parents || []) {
       if (parent.relation === "FATHER") {
         owners.add("FATHER");
       }
@@ -92,6 +117,30 @@ function buildOwnerContext(application) {
         owners.add("CO_APPLICANT");
       }
     }
+  }
+
+  if (application.schoolLoan) {
+    owners.add("STUDENT");
+
+    for (const person of application.schoolLoan.coApplicants || []) {
+      if (person.relation === "FATHER") {
+        owners.add("FATHER");
+      }
+
+      if (person.relation === "MOTHER") {
+        owners.add("MOTHER");
+      }
+
+      if (person.relation === "GUARDIAN") {
+        owners.add("GUARDIAN");
+      }
+
+      if (person.isCoApplicant) {
+        owners.add("CO_APPLICANT");
+      }
+    }
+
+    owners.add("APPLICANT");
   }
 
   if (application.personalLoan) {
@@ -127,6 +176,59 @@ function resolveRequirements(allRequirements, employmentContext, ownerContext) {
 
     return ownerEmploymentType === requirement.employmentType;
   });
+}
+
+function applySchoolLoanConditionalRequirements(application, resolved) {
+  if (!application.schoolLoan) {
+    return resolved;
+  }
+
+  const coApplicants = application.schoolLoan.coApplicants || [];
+
+  const findByOwnerType = (ownerType) =>
+    coApplicants.find((person) => person.relation === ownerType) ||
+    (ownerType === "CO_APPLICANT"
+      ? coApplicants.find((person) => person.isCoApplicant)
+      : null);
+
+  return resolved
+    .map((requirement) => {
+      if (requirement.documentType === "EXISTING_LOAN_STATEMENT") {
+        return application.schoolLoan.hasExistingLoans
+          ? { ...requirement, isMandatory: true }
+          : null;
+      }
+
+      if (
+        requirement.documentType === "GST_CERTIFICATE" ||
+        requirement.documentType === "UDYAM_CERTIFICATE"
+      ) {
+        const owner = findByOwnerType(requirement.ownerType);
+        const registrations = owner?.employment?.registrations || [];
+        const matchType =
+          requirement.documentType === "GST_CERTIFICATE" ? "GST" : "UDYAM";
+        const hasMatchingRegistration = registrations.some(
+          (registration) => registration.registrationType === matchType,
+        );
+
+        return hasMatchingRegistration
+          ? { ...requirement, isMandatory: true }
+          : null;
+      }
+
+      if (requirement.documentType === "LAND_LEASE_PROOF") {
+        const owner = findByOwnerType(requirement.ownerType);
+        const landOwnership = owner?.employment?.landOwnership;
+
+        return landOwnership === "LEASED" ||
+          landOwnership === "PARTIALLY_OWNED_LEASED"
+          ? { ...requirement, isMandatory: true }
+          : null;
+      }
+
+      return requirement;
+    })
+    .filter(Boolean);
 }
 
 export const loanRequiredDocumentService = {
@@ -310,10 +412,9 @@ export const loanRequiredDocumentService = {
      * particular application.
      */
 
-    return resolveRequirements(
-      allRequirements,
-      employmentContext,
-      ownerContext,
+    return applySchoolLoanConditionalRequirements(
+      application,
+      resolveRequirements(allRequirements, employmentContext, ownerContext),
     );
   },
 

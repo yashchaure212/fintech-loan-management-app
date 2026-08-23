@@ -22,6 +22,29 @@ export const emiPaymentRepository = {
     });
   },
 
+  updatePayment(tx, id, data) {
+    return tx.emiPayment.update({
+      where: { id },
+      data,
+    });
+  },
+
+  findPaymentByTransactionId(transactionId, userId) {
+    return prisma.emiPayment.findFirst({
+      where: {
+        transactionId,
+        emiSchedule: {
+          loanApplication: {
+            userId,
+          },
+        },
+      },
+      include: {
+        emiSchedule: true,
+      },
+    });
+  },
+
   updateEmi(tx, id, data) {
     return tx.emiSchedule.update({
       where: {

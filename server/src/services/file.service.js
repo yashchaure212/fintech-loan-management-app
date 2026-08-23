@@ -1,5 +1,7 @@
 import cloudinary from "../config/cloudinary.js";
 
+const SIGNED_URL_TTL_SECONDS = 5 * 60;
+
 export const uploadFile = async (file, folder = "fintech/kyc") => {
   return new Promise((resolve, reject) => {
     cloudinary.uploader
@@ -7,6 +9,8 @@ export const uploadFile = async (file, folder = "fintech/kyc") => {
         {
           folder,
           resource_type: "auto",
+          type: "authenticated",
+          access_mode: "authenticated",
         },
         (error, result) => {
           if (error) {
@@ -18,8 +22,8 @@ export const uploadFile = async (file, folder = "fintech/kyc") => {
           }
 
           resolve({
-            url: result.secure_url,
             publicId: result.public_id,
+            resourceType: result.resource_type || "image",
           });
         },
       )
@@ -27,6 +31,45 @@ export const uploadFile = async (file, folder = "fintech/kyc") => {
   });
 };
 
-export const deleteFile = async (publicId) => {
-  return cloudinary.uploader.destroy(publicId);
+export const getSignedFileUrl = (
+  publicId,
+  resourceType = "image",
+  ttlSeconds = SIGNED_URL_TTL_SECONDS,
+) => {
+  if (!publicId) {
+    return null;
+  }
+
+  return cloudinary.url(publicId, {
+    resource_type: resourceType,
+    type: "authenticated",
+    sign_url: true,
+    secure: true,
+    expires_at: Math.floor(Date.now() / 1000) + ttlSeconds,
+  });
+};
+
+export const withSignedDocumentUrl = (document) => {
+  if (!document) {
+    return document;
+  }
+
+  const { documentUrl, ...rest } = document;
+
+  void documentUrl;
+
+  return {
+    ...rest,
+    documentUrl: getSignedFileUrl(
+      document.publicId,
+      document.resourceType || "image",
+    ),
+  };
+};
+
+export const deleteFile = async (publicId, resourceType = "image") => {
+  return cloudinary.uploader.destroy(publicId, {
+    resource_type: resourceType,
+    type: "authenticated",
+  });
 };

@@ -32,7 +32,12 @@ router.get("/public/:id", loanTypeController.getPublicById);
 */
 
 // Authenticated customer: active loan products
-router.get("/active", loanTypeController.getActive);
+router.get(
+  "/active",
+  protect,
+  authorize("CUSTOMER"),
+  loanTypeController.getActive,
+);
 
 /*
 |--------------------------------------------------------------------------
