@@ -11,12 +11,11 @@ function cookieOptions() {
   return {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
+    sameSite: isProduction ? "lax" : "lax",
     path: "/api/v1/auth",
     maxAge: parseDurationToMs(env.JWT_REFRESH_EXPIRES_IN, SEVEN_DAYS_MS),
   };
 }
-
 export function setRefreshCookie(res, token) {
   res.cookie(REFRESH_COOKIE, token, cookieOptions());
 }
