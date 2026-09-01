@@ -62,7 +62,7 @@
     --brand-navy: 210 72% 11%;
     --brand-navy-foreground: 0 0% 100%;
 
-    --primary: 210 64% 21%;
+    --primary: 210 68% 20%;
     --primary-foreground: 0 0% 100%;
 
     --primary-hover: 210 72% 15%;
@@ -138,10 +138,10 @@
        SEMANTIC
        ----------------------------------------------------- */
 
-    --success: 145 63% 34%;
+    --success: 145 52% 39%;
     --success-foreground: 0 0% 100%;
-    --success-soft: 145 55% 95%;
-    --success-border: 145 35% 80%;
+    --success-soft: 145 42% 95%;
+    --success-border: 145 30% 82%;
 
     --warning: 35 82% 44%;
     --warning-foreground: 0 0% 100%;
@@ -229,9 +229,9 @@
 
     --shadow-sm: 0 1px 3px rgb(18 48 74 / 0.07), 0 1px 2px rgb(18 48 74 / 0.04);
 
-    --shadow-card: 0 1px 2px rgb(18 48 74 / 0.035);
+    --shadow-card: 0 1px 2px rgb(18 48 74 / 0.025);
 
-    --shadow-md: 0 5px 16px rgb(18 48 74 / 0.08);
+    --shadow-md: 0 4px 14px rgb(18 48 74 / 0.06);
 
     --shadow-lg: 0 10px 26px rgb(18 48 74 / 0.10);
 

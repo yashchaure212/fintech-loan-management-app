@@ -290,7 +290,7 @@ function Navbar() {
   const NotificationPanel = ({ mobile = false }) => (
     <div
       className={[
-        "overflow-hidden rounded-md border border-border bg-background shadow-[var(--shadow-lg)]",
+        "overflow-hidden rounded-md border border-border bg-background shadow-[var(--shadow-md)]",
         mobile ? "w-full" : "w-[min(360px,calc(100vw-32px))]",
       ].join(" ")}
     >

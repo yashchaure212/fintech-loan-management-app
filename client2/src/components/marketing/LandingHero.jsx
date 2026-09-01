@@ -53,19 +53,19 @@ const campaigns = [
 
 const toneStyles = {
   blue: {
-    background: "from-[#082f5d] via-[#0d5fa8] to-[#2489d4]",
+    background: "from-[#092944] via-[#104b70] to-[#1b6f98]",
     glow: "bg-cyan-300/20",
     accent: "text-cyan-200",
   },
 
   cyan: {
-    background: "from-[#073b58] via-[#087da3] to-[#18a8c8]",
+    background: "from-[#0b344d] via-[#12627b] to-[#25899a]",
     glow: "bg-white/10",
     accent: "text-cyan-100",
   },
 
   navy: {
-    background: "from-[#0a2238] via-[#123f63] to-[#1c6ca3]",
+    background: "from-[#081f35] via-[#123b5a] to-[#1b5f83]",
     glow: "bg-blue-300/15",
     accent: "text-blue-100",
   },
@@ -162,7 +162,7 @@ function LandingHero() {
           overflow-hidden
           bg-gradient-to-br
           ${tone.background}
-          shadow-lg
+          shadow-[var(--shadow-card)]
           sm:min-h-[390px]
           sm:rounded-lg
           lg:min-h-[410px]
@@ -245,7 +245,7 @@ function LandingHero() {
               </span>
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-2.5">
+            <div className="mt-8 flex flex-wrap gap-3">
               {primaryAction}
 
               <Link
