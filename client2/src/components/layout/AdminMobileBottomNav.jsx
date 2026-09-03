@@ -1,15 +1,20 @@
-import { Home, FileText } from "lucide-react";
+import { Home, FileText, SlidersHorizontal } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const items = [
   { name: "Dashboard", path: "/admin/dashboard", icon: Home },
   { name: "Applications", path: "/admin/loans", icon: FileText },
+  {
+    name: "Configuration",
+    path: "/admin/loan-configuration",
+    icon: SlidersHorizontal,
+  },
 ];
 
 function AdminMobileBottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
-      <div className="grid h-16 grid-cols-2">
+      <div className="grid h-16 grid-cols-3">
         {items.map((item) => {
           const Icon = item.icon;
 

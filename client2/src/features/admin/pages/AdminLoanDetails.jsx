@@ -49,6 +49,10 @@ import {
 } from "@/components/ui/dialog";
 
 import { formatCurrency } from "@/features/loan/utils/loanFormatters";
+import {
+  HOME_OWNERSHIP_LABELS,
+  SALARY_FREQUENCY_LABELS,
+} from "@/features/loan/constants/loanEnums";
 
 const workflow = {
   DRAFT: [],
@@ -429,7 +433,7 @@ function AdminLoanDetails() {
               <ContentSection
                 eyebrow="Configuration"
                 title="Loan configuration"
-                description="Configuration captured when this application was created."
+                description="Pricing version captured for this application. Historical loans are never repriced."
                 icon={Landmark}
               >
                 <div className="border-y border-border py-6">
@@ -570,7 +574,12 @@ function AdminLoanDetails() {
 
                     <AdminField
                       label="School type"
-                      value={loan.schoolLoan.schoolType}
+                      value={
+                        loan.schoolLoan.institution?.schoolType ||
+                        loan.schoolLoan.schoolType ||
+                        "-"
+                      }
+                      hint="From institution records"
                     />
 
                     <AdminField
@@ -738,6 +747,24 @@ function AdminLoanDetails() {
                               : "-"
                           }
                         />
+
+                        <AdminField
+                          label="Permanent address"
+                          value={
+                            person.sameAsCurrentAddress
+                              ? "Same as current"
+                              : person.permanentAddress
+                                ? `${person.permanentAddress.city}, ${person.permanentAddress.state}`
+                                : "-"
+                          }
+                        />
+
+                        <AdminField
+                          label="Home ownership"
+                          value={
+                            HOME_OWNERSHIP_LABELS[person.homeOwnership] || "-"
+                          }
+                        />
                       </div>
 
                       {person.employment ? (
@@ -774,6 +801,24 @@ function AdminLoanDetails() {
                                   person.employment.agriculturalIncome,
                               )}
                             />
+
+                            {person.employment.salaryFrequency ? (
+                              <AdminField
+                                label="Salary frequency"
+                                value={
+                                  SALARY_FREQUENCY_LABELS[
+                                    person.employment.salaryFrequency
+                                  ] || person.employment.salaryFrequency
+                                }
+                              />
+                            ) : null}
+
+                            {person.employment.salaryAccountBank ? (
+                              <AdminField
+                                label="Salary account bank"
+                                value={person.employment.salaryAccountBank}
+                              />
+                            ) : null}
 
                             {person.employment.registrations?.length > 0 ? (
                               <AdminField

@@ -57,16 +57,14 @@ const studentSchema = z
       .regex(/^\d{12}$/, "Aadhaar must contain 12 digits")
       .optional()
       .or(z.literal("")),
-    panNumber: z
-      .string()
-      .trim()
-      .regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, "Invalid PAN number")
-      .optional()
-      .or(z.literal("")),
+    /*
+     * A school student does not have a PAN, so it is not collected.
+     * School type is internal institution metadata and is never
+     * entered by the customer.
+     */
 
     currentSchoolName: z.string().trim().min(1, "School name is required"),
     institutionId: z.string().optional(),
-    schoolType: z.enum(["GOVERNMENT", "PRIVATE", "OTHER"]).optional(),
     currentClass: z.enum(SCHOOL_CLASSES, {
       errorMap: () => ({ message: "Select the current class" }),
     }),
@@ -119,10 +117,8 @@ const emptyValues = {
   mobile: "",
   email: "",
   aadhaarNumber: "",
-  panNumber: "",
   currentSchoolName: "",
   institutionId: "",
-  schoolType: "GOVERNMENT",
   currentClass: "CLASS_1",
   academicYear: "",
   continuingSameSchool: true,
@@ -192,10 +188,8 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
       mobile: existingDetails.mobile || "",
       email: existingDetails.email || "",
       aadhaarNumber: existingDetails.aadhaarNumber || "",
-      panNumber: existingDetails.panNumber || "",
       currentSchoolName: existingDetails.currentSchoolName || "",
       institutionId: existingDetails.institutionId || "",
-      schoolType: existingDetails.schoolType || "GOVERNMENT",
       currentClass: existingDetails.currentClass || "CLASS_1",
       academicYear: existingDetails.academicYear || "",
       continuingSameSchool: existingDetails.continuingSameSchool ?? true,
@@ -221,10 +215,8 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
       mobile: values.mobile || undefined,
       email: values.email || undefined,
       aadhaarNumber: values.aadhaarNumber || undefined,
-      panNumber: values.panNumber || undefined,
       currentSchoolName: values.currentSchoolName,
       institutionId: values.institutionId || null,
-      schoolType: values.schoolType || undefined,
       currentClass: values.currentClass,
       academicYear: values.academicYear,
       continuingSameSchool: values.continuingSameSchool,
@@ -374,15 +366,6 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
                 {...register("aadhaarNumber")}
               />
 
-              <FormInput
-                label="PAN number"
-                helperText="Optional, if applicable"
-                maxLength={10}
-                className="uppercase"
-                placeholder="ABCDE1234F"
-                error={errors.panNumber}
-                {...register("panNumber")}
-              />
             </div>
           </section>
 
@@ -439,7 +422,6 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
                           onClick={() => {
                             setValue("currentSchoolName", school.name);
                             setValue("institutionId", school.id);
-                            setValue("schoolType", school.schoolType);
                             setSchoolQuery("");
                           }}
                         >
@@ -467,13 +449,6 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
                 ) : null}
               </div>
 
-              <FormField label="School type" error={errors.schoolType?.message}>
-                <select className={selectClassName} {...register("schoolType")}>
-                  <option value="GOVERNMENT">Government</option>
-                  <option value="PRIVATE">Private</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </FormField>
 
               <FormField
                 label="Current class"

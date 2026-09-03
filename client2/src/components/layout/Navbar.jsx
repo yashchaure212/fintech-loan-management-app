@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   User,
   X,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -62,6 +63,11 @@ const adminNavigation = [
     label: "Loan Applications",
     path: "/admin/loans",
     icon: FileText,
+  },
+  {
+    label: "Loan Configuration",
+    path: "/admin/loan-configuration",
+    icon: SlidersHorizontal,
   },
 ];
 

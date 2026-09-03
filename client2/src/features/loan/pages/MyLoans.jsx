@@ -6,8 +6,8 @@ import { Progress } from "@/components/ui/progress";
 import StatusBadge from "@/components/common/StatusBadge";
 
 import { useGetMyLoanApplicationsQuery } from "../api/loanApi";
+import { SCHOOL_STUDENT_LOAN_CODE } from "../constants/loanEnums";
 
-const SCHOOL_STUDENT_LOAN_CODE = "SCHOOL_STUDENT_LOAN";
 
 function formatCurrency(value) {
   if (value == null) return "-";

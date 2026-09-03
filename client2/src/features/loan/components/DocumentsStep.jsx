@@ -12,7 +12,7 @@ import { toast } from "react-hot-toast";
 
 import {
   useGetLoanDocumentsQuery,
-  useGetRequiredLoanDocumentsQuery,
+  useGetLoanDocumentChecklistQuery,
   useUploadLoanDocumentMutation,
   useDeleteLoanDocumentMutation,
 } from "../api/loanDocumentApi";
@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import FormField from "@/components/common/FormField";
-import StatusBadge from "@/components/common/StatusBadge";
+import { CUSTOMER_DOCUMENT_STATE_LABELS } from "../constants/loanEnums";
 
 import { LoanWizardShell, LoanWizardActions } from "./LoanWizardShell";
 
@@ -98,12 +98,18 @@ function DocumentsStep({
     skip: !loanApplicationId,
   });
 
+  /*
+   * The backend resolves WHICH documents apply to this application and
+   * what state each one is in. The UI renders exactly that list - it
+   * never filters requirements itself, because anything hidden here
+   * would still be enforced at submission.
+   */
   const {
     data: requirementsData,
     isLoading: isRequirementsLoading,
     isError: isRequirementsError,
     refetch: refetchRequirements,
-  } = useGetRequiredLoanDocumentsQuery(loanApplicationId, {
+  } = useGetLoanDocumentChecklistQuery(loanApplicationId, {
     skip: !loanApplicationId,
   });
 
@@ -134,32 +140,9 @@ function DocumentsStep({
   }, [documentsData]);
 
   const requiredDocuments = useMemo(() => {
-    if (!Array.isArray(requirementsData?.data)) {
-      return [];
-    }
+    const items = requirementsData?.data?.items;
 
-    return requirementsData.data.filter((requirement) => {
-      // These documents are intentionally not shown/required in the
-      // frontend school-loan form. They can remain in the backend/API
-      // contract without affecting the UI or mandatory-document checks.
-      if (
-        requirement.documentType === "BIRTH_CERTIFICATE" ||
-        requirement.documentType === "PREVIOUS_CLASS_RESULT"
-      ) {
-        return false;
-      }
-
-      // Address proof is not required for the student. Keep address proof
-      // available for other owners such as a parent/co-applicant.
-      if (
-        requirement.ownerType === "STUDENT" &&
-        requirement.documentType === "ADDRESS_PROOF"
-      ) {
-        return false;
-      }
-
-      return true;
-    });
+    return Array.isArray(items) ? items : [];
   }, [requirementsData]);
 
   /*
@@ -188,8 +171,16 @@ function DocumentsStep({
    * ============================================================
    */
 
-  function getDocumentLabel(type) {
-    return DOCUMENT_TYPE_LABELS[type] || type;
+  function getDocumentLabel(requirement) {
+    if (typeof requirement === "string") {
+      return DOCUMENT_TYPE_LABELS[requirement] || requirement;
+    }
+
+    return (
+      requirement?.label ||
+      DOCUMENT_TYPE_LABELS[requirement?.documentType] ||
+      requirement?.documentType
+    );
   }
 
   function getOwnerLabel(type) {
@@ -225,10 +216,13 @@ function DocumentsStep({
     )[0];
   }
 
+  /*
+   * Satisfaction is decided by the backend's customer-facing state, so
+   * an uploaded-but-unreviewed document counts as done here exactly as
+   * it does at submission.
+   */
   function isRequirementSatisfied(requirement) {
-    const uploadedDocument = getUploadedDocument(requirement);
-
-    return Boolean(uploadedDocument && uploadedDocument.status !== "REJECTED");
+    return Boolean(requirement.isSatisfied);
   }
 
   /*
@@ -298,11 +292,7 @@ function DocumentsStep({
         documentType: selectedRequirement.documentType,
       }).unwrap();
 
-      toast.success(
-        `${getDocumentLabel(
-          selectedRequirement.documentType,
-        )} uploaded successfully.`,
-      );
+      toast.success(`${getDocumentLabel(selectedRequirement)} uploaded.`);
 
       setSelectedRequirement(null);
       setSelectedFile(null);
@@ -574,19 +564,20 @@ function DocumentsStep({
                         const uploadedDocument =
                           getUploadedDocument(requirement);
 
-                        const isUploaded = Boolean(uploadedDocument);
-
                         const isRejected =
-                          uploadedDocument?.status === "REJECTED";
+                          requirement.customerState === "REJECTED";
 
                         const isVerified =
-                          uploadedDocument?.status === "VERIFIED";
+                          requirement.customerState === "VERIFIED";
 
-                        const canDelete =
-                          isUploaded &&
-                          uploadedDocument?.status !== "VERIFIED" &&
-                          (uploadedDocument?.status === "PENDING" ||
-                            isRejected);
+                        /*
+                         * "Uploaded" means a file exists for this slot -
+                         * including one still awaiting review. A rejected
+                         * slot needs a replacement, so it is not uploaded.
+                         */
+                        const isUploaded = requirement.isSatisfied;
+
+                        const canDelete = Boolean(requirement.canDelete);
 
                         return (
                           <div
@@ -624,7 +615,7 @@ function DocumentsStep({
                               <div className="min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <p className="text-sm font-semibold">
-                                    {getDocumentLabel(requirement.documentType)}
+                                    {getDocumentLabel(requirement)}
                                   </p>
 
                                   {requirement.isMandatory ? (
@@ -643,33 +634,43 @@ function DocumentsStep({
                                     </Badge>
                                   )}
 
-                                  {isUploaded && uploadedDocument?.status ? (
-                                    <StatusBadge
-                                      status={uploadedDocument.status}
-                                      type="document"
-                                    />
+                                  {requirement.customerState &&
+                                  requirement.customerState !== "MISSING" ? (
+                                    <Badge
+                                      variant={
+                                        isVerified
+                                          ? "success"
+                                          : isRejected
+                                            ? "destructive"
+                                            : "neutral"
+                                      }
+                                      className="text-[10px]"
+                                    >
+                                      {isVerified
+                                        ? "Verified"
+                                        : isRejected
+                                          ? "Rejected"
+                                          : "Uploaded"}
+                                    </Badge>
                                   ) : null}
                                 </div>
 
                                 <p className="mt-1 text-xs text-muted-foreground">
-                                  {isRejected
-                                    ? "Document rejected — replacement required"
-                                    : isVerified
-                                      ? "Document verified"
-                                      : isUploaded
-                                        ? "Document uploaded and awaiting review"
-                                        : "Document not uploaded"}
+                                  {requirement.stateLabel ||
+                                    CUSTOMER_DOCUMENT_STATE_LABELS[
+                                      requirement.customerState
+                                    ] ||
+                                    "Not uploaded"}
                                 </p>
 
-                                {isRejected &&
-                                uploadedDocument?.rejectionReason ? (
+                                {isRejected && requirement.rejectionReason ? (
                                   <div className="mt-3 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2">
                                     <p className="text-xs font-medium text-destructive">
                                       Review note
                                     </p>
 
                                     <p className="mt-1 text-xs text-destructive/80">
-                                      {uploadedDocument.rejectionReason}
+                                      {requirement.rejectionReason}
                                     </p>
                                   </div>
                                 ) : null}
@@ -799,7 +800,7 @@ function DocumentsStep({
             <DialogTitle>
               Upload{" "}
               {selectedRequirement
-                ? getDocumentLabel(selectedRequirement.documentType)
+                ? getDocumentLabel(selectedRequirement)
                 : "Document"}
             </DialogTitle>
 
@@ -821,7 +822,7 @@ function DocumentsStep({
 
                     <div>
                       <p className="text-sm font-semibold">
-                        {getDocumentLabel(selectedRequirement.documentType)}
+                        {getDocumentLabel(selectedRequirement)}
                       </p>
 
                       <p className="mt-1 text-xs text-muted-foreground">

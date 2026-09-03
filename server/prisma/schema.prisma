@@ -390,6 +390,7 @@ model ParentDetails {
   permanentAddress Address? @relation("ParentPermanentAddress", fields: [permanentAddressId], references: [id])
   sameAsCurrentAddress Boolean @default(false)
   yearsAtCurrentAddress Int?
+  homeOwnership HomeOwnership?
 
   employment ParentEmployment?
 
@@ -417,7 +418,7 @@ model ParentEmployment {
   experienceYears Int?
   industryType String?
   dateOfJoining DateTime?
-  salaryFrequency String?
+  salaryFrequency SalaryFrequency?
   previousYearIncome Decimal? @db.Decimal(12, 2)
   salaryAccountBank String?
   employerAddressId String?
@@ -463,6 +464,21 @@ model ParentEmployment {
   updatedAt DateTime @updatedAt
 
   @@map("parent_employment")
+}
+
+/// Residential ownership of the co-applicant's current address.
+/// Deliberately separate from LandOwnership (agricultural land tenure).
+enum HomeOwnership {
+  OWNED
+  RENTED
+}
+
+enum SalaryFrequency {
+  MONTHLY
+  WEEKLY
+  FORTNIGHTLY
+  QUARTERLY
+  ANNUALLY
 }
 
 enum LandOwnership {
@@ -526,11 +542,15 @@ model SchoolStudentLoanApplication {
   mobile String?
   email String?
   aadhaarNumber String?
+  /// DEPRECATED: student PAN is no longer collected for School Student Loan.
+  /// Retained for historical records only; never written by new applications.
   panNumber String?
 
   currentSchoolName String
   institutionId String?
   institution Institution? @relation(fields: [institutionId], references: [id])
+  /// DEPRECATED: customer-supplied school type is no longer accepted.
+  /// School type is internal Institution metadata. Historical values retained.
   schoolType SchoolType?
   currentClass SchoolClass
   academicYear String
@@ -546,6 +566,8 @@ model SchoolStudentLoanApplication {
   previousClassPercentage Decimal? @db.Decimal(5, 2)
 
   loanPurpose String?
+  /// DEPRECATED: expected disbursement date is no longer collected.
+  /// Retained for historical records only; never written by new applications.
   expectedDisbursementDate DateTime?
   tuitionFees Decimal? @db.Decimal(12, 2)
   admissionFees Decimal? @db.Decimal(12, 2)
@@ -740,6 +762,7 @@ model LoanInterestConfiguration {
   updatedAt DateTime @updatedAt
 
   @@index([loanTypeId])
+  @@index([loanTypeId, isActive, isDeleted, effectiveFrom], map: "loan_interest_config_lookup_idx")
   @@map("loan_interest_configurations")
 }
 

@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  HOME_OWNERSHIP_VALUES,
+  SALARY_FREQUENCIES,
+} from "../constants/loanProducts.js";
+
 function optionalNumber() {
   return z.preprocess((value) => {
     if (value === null || value === undefined || value === "") {
@@ -84,7 +89,11 @@ const employmentSchema = z.object({
     experienceYears: optionalInt(),
     industryType: z.string().trim().min(1).optional(),
     dateOfJoining: z.coerce.date().optional(),
-    salaryFrequency: z.string().trim().min(1).optional(),
+    salaryFrequency: z
+      .enum(SALARY_FREQUENCIES, {
+        message: "Select a valid salary frequency",
+      })
+      .optional(),
     previousYearIncome: optionalNumber(),
     salaryAccountBank: z.string().trim().min(1).optional(),
     employerAddress: addressSchema.optional(),
@@ -124,7 +133,15 @@ const employmentSchema = z.object({
 
     // Other
     occupation: z.string().trim().min(1).optional(),
-});
+  })
+  .refine(
+    (data) =>
+      data.employmentType !== "SALARIED" || Boolean(data.salaryFrequency),
+    {
+      message: "Salary frequency is required for salaried employment",
+      path: ["salaryFrequency"],
+    },
+);
 
 const coApplicantSchema = z.object({
   relation: z.enum(["FATHER", "MOTHER", "GUARDIAN", "OTHER"]),
@@ -159,6 +176,11 @@ const coApplicantSchema = z.object({
   permanentAddress: addressSchema.optional(),
   sameAsCurrentAddress: z.boolean().default(false),
   yearsAtCurrentAddress: optionalInt(),
+  homeOwnership: z
+    .enum(HOME_OWNERSHIP_VALUES, {
+      message: "Select whether the home is owned or rented",
+    })
+    .optional(),
 
   bankAccountNumber: z.string().trim().optional(),
   ifscCode: z.string().trim().optional(),
@@ -166,7 +188,7 @@ const coApplicantSchema = z.object({
   employment: employmentSchema.optional(),
 });
 
-export const createSchoolLoanSchema = z.object({
+const schoolLoanShape = z.object({
   // Student personal
   studentName: z.string().trim().min(2).max(100),
   dateOfBirth: z.coerce.date(),
@@ -182,16 +204,18 @@ export const createSchoolLoanSchema = z.object({
     .regex(/^\d{12}$/, "Aadhaar number must contain 12 digits")
     .optional()
     .or(z.literal("")),
-  panNumber: z
-    .string()
-    .regex(/^[A-Z]{5}[0-9]{4}[A-Z]$/, "Invalid PAN number")
-    .optional()
-    .or(z.literal("")),
+
+  /*
+   * Student PAN is deliberately not part of this contract: a school
+   * student does not have one. Co-applicant PAN is still collected.
+   *
+   * schoolType is likewise omitted - school type is internal
+   * Institution metadata and is never taken from the customer.
+   */
 
   // Current education
   currentSchoolName: z.string().trim().min(1).max(200),
   institutionId: z.uuid().nullable().optional(),
-  schoolType: z.enum(["GOVERNMENT", "PRIVATE", "OTHER"]).optional(),
   currentClass: z.enum(SCHOOL_CLASSES),
   academicYear: z.string().trim().min(4).max(20),
   continuingSameSchool: z.boolean().default(true),
@@ -210,7 +234,6 @@ export const createSchoolLoanSchema = z.object({
   // Loan requirement (set later, at Step 5, but accepted here too since
   // updateSchoolLoanSchema is a .partial() of this same object)
   loanPurpose: z.string().trim().optional(),
-  expectedDisbursementDate: z.coerce.date().optional(),
   tuitionFees: z.number().nonnegative().optional(),
   admissionFees: z.number().nonnegative().optional(),
   examinationFees: z.number().nonnegative().optional(),
@@ -230,6 +253,13 @@ export const createSchoolLoanSchema = z.object({
   coApplicants: z.array(coApplicantSchema).max(2).optional(),
 });
 
-export const updateSchoolLoanSchema = createSchoolLoanSchema.partial();
+/*
+ * strict(): a payload still sending panNumber / schoolType /
+ * expectedDisbursementDate is rejected rather than silently dropped,
+ * so a stale client cannot believe it saved something it did not.
+ */
+export const createSchoolLoanSchema = schoolLoanShape.strict();
+
+export const updateSchoolLoanSchema = schoolLoanShape.partial().strict();
 
 export const updateCoApplicantSchema = coApplicantSchema.partial();

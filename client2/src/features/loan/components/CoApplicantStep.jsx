@@ -15,6 +15,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import FormInput from "@/components/common/FormInput";
 import FormField from "@/components/common/FormField";
 import {
+  HOME_OWNERSHIP_OPTIONS,
+  HOME_OWNERSHIP_VALUES,
+} from "../constants/loanEnums";
+import {
   LoanWizardShell,
   LoanWizardActions,
   selectClassName,
@@ -74,6 +78,9 @@ const coApplicantSchema = z.object({
     pincode: z.string().trim().optional(),
   }),
   yearsAtCurrentAddress: z.string().trim().optional(),
+  homeOwnership: z.enum(HOME_OWNERSHIP_VALUES, {
+    message: "Select whether the home is owned or rented",
+  }),
 });
 
 const formSchema = z
@@ -136,6 +143,7 @@ const emptyCoApplicant = {
   sameAsCurrentAddress: true,
   permanentAddress: emptyAddress,
   yearsAtCurrentAddress: "",
+  homeOwnership: "OWNED",
 };
 
 function toDateInputValue(value) {
@@ -237,6 +245,7 @@ function CoApplicantStep({ loanApplicationId, onBack, onNext }) {
           currentAddress: addressFromExisting(person.currentAddress),
           sameAsCurrentAddress: person.sameAsCurrentAddress ?? true,
           permanentAddress: addressFromExisting(person.permanentAddress),
+          homeOwnership: person.homeOwnership || "OWNED",
           yearsAtCurrentAddress:
             person.yearsAtCurrentAddress != null
               ? String(person.yearsAtCurrentAddress)
@@ -289,6 +298,7 @@ function CoApplicantStep({ loanApplicationId, onBack, onNext }) {
           permanentAddress: person.sameAsCurrentAddress
             ? undefined
             : person.permanentAddress,
+          homeOwnership: person.homeOwnership || undefined,
           yearsAtCurrentAddress: person.yearsAtCurrentAddress
             ? Number(person.yearsAtCurrentAddress)
             : undefined,
@@ -743,6 +753,35 @@ function CoApplicantStep({ loanApplicationId, onBack, onNext }) {
                             `coApplicants.${index}.yearsAtCurrentAddress`,
                           )}
                         />
+
+                        <FormField
+                          label="Home ownership"
+                          required
+                          error={
+                            errors.coApplicants?.[index]?.homeOwnership?.message
+                          }
+                        >
+                          <div className="flex flex-wrap gap-3">
+                            {HOME_OWNERSHIP_OPTIONS.map((option) => (
+                              <label
+                                key={option.value}
+                                className="flex cursor-pointer items-center gap-2 rounded-lg border bg-muted/20 px-4 py-2.5 text-sm transition-colors hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                              >
+                                <input
+                                  type="radio"
+                                  className="size-4 accent-primary"
+                                  value={option.value}
+                                  {...register(
+                                    `coApplicants.${index}.homeOwnership`,
+                                  )}
+                                />
+                                <span className="font-medium text-foreground">
+                                  {option.label}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        </FormField>
                       </div>
 
                       {/* Same Address */}

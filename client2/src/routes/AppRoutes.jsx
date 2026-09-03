@@ -32,6 +32,9 @@ const AdminLoans = lazy(() => import("@/features/admin/pages/AdminLoans"));
 const AdminLoanDetails = lazy(
   () => import("@/features/admin/pages/AdminLoanDetails"),
 );
+const AdminLoanConfiguration = lazy(
+  () => import("@/features/admin/pages/AdminLoanConfiguration"),
+);
 
 function RouteLoader() {
   return (
@@ -85,6 +88,10 @@ function AppRoutes() {
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="loans" element={<AdminLoans />} />
               <Route path="loans/:id" element={<AdminLoanDetails />} />
+              <Route
+                path="loan-configuration"
+                element={<AdminLoanConfiguration />}
+              />
             </Route>
           </Route>
 

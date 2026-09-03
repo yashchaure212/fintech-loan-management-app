@@ -4,15 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "react-hot-toast";
 
-import {
-  useGetActiveLoanTypesQuery,
-  useUpdateLoanApplicationMutation,
-} from "../api/loanApi";
+import { useUpdateLoanApplicationMutation } from "../api/loanApi";
 
 import {
   useGetSchoolLoanDetailsQuery,
   useUpdateSchoolLoanDetailsMutation,
 } from "../api/schoolLoanApi";
+
+import { useGetApplicableLoanConfigurationQuery } from "../api/loanConfigurationApi";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,7 +39,6 @@ const requirementSchema = z.object({
   loanAmount: z.string().trim().min(1, "Loan amount is required"),
   tenureMonths: z.string().trim().min(1, "Tenure is required"),
   loanPurpose: z.string().trim().optional(),
-  expectedDisbursementDate: z.string().optional(),
   tuitionFees: numberField(),
   admissionFees: numberField(),
   examinationFees: numberField(),
@@ -59,7 +57,6 @@ const emptyValues = {
   loanAmount: "",
   tenureMonths: "",
   loanPurpose: "",
-  expectedDisbursementDate: "",
   tuitionFees: "",
   admissionFees: "",
   examinationFees: "",
@@ -78,11 +75,6 @@ const emptyValues = {
    HELPERS
 ========================================================= */
 
-function toDateInputValue(value) {
-  if (!value) return "";
-  return String(value).slice(0, 10);
-}
-
 /* =========================================================
    COMPONENT
 ========================================================= */
@@ -93,8 +85,6 @@ function LoanRequirementStep({
   onBack,
   onNext,
 }) {
-  const { data: loanTypesData } = useGetActiveLoanTypesQuery();
-
   const { data: schoolLoanData, isLoading: isFetching } =
     useGetSchoolLoanDetailsQuery(loanApplicationId, {
       skip: !loanApplicationId,
@@ -110,35 +100,15 @@ function LoanRequirementStep({
 
   const schoolLoan = schoolLoanData?.data;
 
-  const loanTypes = loanTypesData?.data || [];
+  /*
+   * Pricing is NOT derived in React. The backend decides which
+   * configuration version applies right now and returns it; the UI
+   * only displays it. Nothing here is hardcoded.
+   */
+  const { data: configurationData, isLoading: isLoadingConfiguration } =
+    useGetApplicableLoanConfigurationQuery();
 
-  const selectedLoan = useMemo(
-    () =>
-      loanTypes.find((loan) => loan.id === loanApplication?.loanTypeId) || null,
-    [loanTypes, loanApplication],
-  );
-
-  const loanConfiguration = useMemo(() => {
-    if (!selectedLoan?.interestConfigurations?.length) {
-      return null;
-    }
-
-    const active = selectedLoan.interestConfigurations.filter(
-      (c) => c?.isActive !== false && c?.isDeleted !== true,
-    );
-
-    if (!active.length) {
-      return null;
-    }
-
-    return [...active].sort((a, b) => {
-      const dateA = a?.effectiveFrom ? new Date(a.effectiveFrom).getTime() : 0;
-
-      const dateB = b?.effectiveFrom ? new Date(b.effectiveFrom).getTime() : 0;
-
-      return dateB - dateA;
-    })[0];
-  }, [selectedLoan]);
+  const loanConfiguration = configurationData?.data || null;
 
   const {
     register,
@@ -171,9 +141,6 @@ function LoanRequirementStep({
 
       loanPurpose: schoolLoan.loanPurpose || "",
 
-      expectedDisbursementDate: toDateInputValue(
-        schoolLoan.expectedDisbursementDate,
-      ),
 
       tuitionFees:
         schoolLoan.tuitionFees != null ? String(schoolLoan.tuitionFees) : "",
@@ -282,8 +249,6 @@ function LoanRequirementStep({
         loanApplicationId,
         data: {
           loanPurpose: formValues.loanPurpose || undefined,
-          expectedDisbursementDate:
-            formValues.expectedDisbursementDate || undefined,
 
           tuitionFees: numberOr(formValues.tuitionFees),
           admissionFees: numberOr(formValues.admissionFees),
@@ -320,7 +285,7 @@ function LoanRequirementStep({
      LOADING
   ======================================================= */
 
-  if (isFetching) {
+  if (isFetching || isLoadingConfiguration) {
     return (
       <LoanWizardShell
         step={5}
@@ -369,7 +334,8 @@ function LoanRequirementStep({
                 </p>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Based on the selected loan product and current configuration.
+                  Current terms for this product. Your final interest, fees and
+                  EMI are calculated and confirmed when you submit.
                 </p>
               </div>
 
@@ -384,6 +350,10 @@ function LoanRequirementStep({
                   months
                   {" · "}
                   {Number(loanConfiguration.interestRate)}% p.a.
+                  {" · "}
+                  {loanConfiguration.processingFeeType === "PERCENTAGE"
+                    ? `${Number(loanConfiguration.processingFee)}% processing fee`
+                    : `${formatCurrency(loanConfiguration.processingFee)} processing fee`}
                 </p>
               </div>
             </div>
@@ -412,6 +382,11 @@ function LoanRequirementStep({
               required
               inputMode="numeric"
               placeholder="Enter amount"
+              helperText={
+                loanConfiguration
+                  ? `${formatCurrency(loanConfiguration.minAmount)} – ${formatCurrency(loanConfiguration.maxAmount)}`
+                  : undefined
+              }
               error={errors.loanAmount}
               {...register("loanAmount")}
             />
@@ -421,16 +396,13 @@ function LoanRequirementStep({
               required
               inputMode="numeric"
               placeholder="e.g. 48"
+              helperText={
+                loanConfiguration
+                  ? `${loanConfiguration.minTenure} – ${loanConfiguration.maxTenure} months`
+                  : undefined
+              }
               error={errors.tenureMonths}
               {...register("tenureMonths")}
-            />
-
-            <FormInput
-              label="Expected disbursement date"
-              type="date"
-              helperText="Optional"
-              error={errors.expectedDisbursementDate}
-              {...register("expectedDisbursementDate")}
             />
 
             <FormInput

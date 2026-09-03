@@ -401,13 +401,13 @@ function LoanDetails() {
               value={maskAadhaar(schoolLoan.aadhaarNumber)}
             />
 
-            <Field label="PAN" value={schoolLoan.panNumber} />
-
             <Field label="School" value={schoolLoan.currentSchoolName} />
 
             <Field
               label="School type"
-              value={formatEnum(schoolLoan.schoolType)}
+              value={formatEnum(
+                schoolLoan.institution?.schoolType || schoolLoan.schoolType,
+              )}
             />
 
             <Field label="Class" value={formatClass(schoolLoan.currentClass)} />

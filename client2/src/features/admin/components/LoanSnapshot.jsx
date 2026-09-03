@@ -15,7 +15,8 @@ function LoanSnapshot({ snapshot, loanType, loanTypeName }) {
         <div>
           <h3 className="text-sm font-semibold">Captured configuration</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Terms locked when this application was created.
+            Terms captured at submission. These remain in force for this loan
+            even if pricing has changed since.
           </p>
         </div>
 
@@ -77,6 +78,34 @@ function LoanSnapshot({ snapshot, loanType, loanTypeName }) {
         <AdminField
           label="Foreclosure charge"
           value={formatCurrency(snapshot.foreclosureCharge)}
+        />
+
+        <AdminField
+          label="Configuration version"
+          value={snapshot.configurationId || "-"}
+          hint="Pricing version used for this loan"
+        />
+
+        <AdminField
+          label="Effective from"
+          value={
+            snapshot.effectiveFrom
+              ? new Date(snapshot.effectiveFrom).toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "-"
+          }
+        />
+
+        <AdminField
+          label="Captured at"
+          value={
+            snapshot.capturedAt
+              ? new Date(snapshot.capturedAt).toLocaleString("en-IN")
+              : "-"
+          }
         />
       </div>
     </div>

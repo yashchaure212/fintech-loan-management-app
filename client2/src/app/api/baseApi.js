@@ -162,6 +162,7 @@ export const baseApi = createApi({
     "Institution",
     "ExistingLoan",
     "BusinessRegistration",
+    "LoanConfiguration",
   ],
 
   endpoints: () => ({}),

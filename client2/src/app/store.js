@@ -8,6 +8,7 @@ import "@/features/loan/api/institutionApi";
 import "@/features/loan/api/existingLoanApi";
 import "@/features/loan/api/businessRegistrationApi";
 import "@/features/loan/api/loanApi";
+import "@/features/loan/api/loanConfigurationApi";
 import "@/features/loan/api/loanDocumentApi";
 import "@/features/admin/api/adminLoanApi";
 import "@/features/emi/api/emiApi";

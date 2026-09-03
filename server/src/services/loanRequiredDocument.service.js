@@ -1,5 +1,16 @@
 import { loanRequiredDocumentRepository } from "../repositories/loanRequiredDocument.repository.js";
 import { loanApplicationRepository } from "../repositories/loanApplication.repository.js";
+import {
+  CUSTOMER_DOCUMENT_STATES,
+  CUSTOMER_DOCUMENT_STATE_LABELS,
+  SCHOOL_STUDENT_LOAN_CODE,
+  documentLabel,
+  documentOwnerLabel,
+  isAllowedSchoolLoanRequirement,
+  isSatisfiedCustomerDocumentState,
+  requirementKey,
+  toCustomerDocumentState,
+} from "../constants/loanProducts.js";
 import AppError from "../utils/AppError.js";
 
 /*
@@ -231,6 +242,43 @@ function applySchoolLoanConditionalRequirements(application, resolved) {
     .filter(Boolean);
 }
 
+/*
+ * ============================================================
+ * ONE SOURCE OF TRUTH
+ * ============================================================
+ *
+ * Every requirement returned here is:
+ *   - applicable to this application (owner + employment context)
+ *   - part of the supported document vocabulary
+ *   - labelled for the customer by the backend
+ *
+ * The customer UI renders exactly this list and submission validates
+ * exactly this list, so a requirement can never be hidden in one
+ * place while still blocking in another.
+ */
+
+function filterToSupportedSlots(application, requirements) {
+  if (application.loanType?.code !== SCHOOL_STUDENT_LOAN_CODE) {
+    return requirements;
+  }
+
+  return requirements.filter((requirement) =>
+    isAllowedSchoolLoanRequirement(
+      requirement.ownerType,
+      requirement.documentType,
+    ),
+  );
+}
+
+function enrichRequirement(requirement) {
+  return {
+    ...requirement,
+    key: requirementKey(requirement.ownerType, requirement.documentType),
+    label: documentLabel(requirement.documentType),
+    ownerLabel: documentOwnerLabel(requirement.ownerType),
+  };
+}
+
 export const loanRequiredDocumentService = {
   /*
    * ============================================================
@@ -245,6 +293,16 @@ export const loanRequiredDocumentService = {
 
     if (!loanType) {
       throw new AppError("Loan type not found", 404);
+    }
+
+    if (
+      loanType.code === SCHOOL_STUDENT_LOAN_CODE &&
+      !isAllowedSchoolLoanRequirement(data.ownerType, data.documentType)
+    ) {
+      throw new AppError(
+        "This document is not part of the School Student Loan document set",
+        400,
+      );
     }
 
     const employmentType = data.employmentType ?? null;
@@ -412,10 +470,100 @@ export const loanRequiredDocumentService = {
      * particular application.
      */
 
-    return applySchoolLoanConditionalRequirements(
+    const resolved = applySchoolLoanConditionalRequirements(
       application,
       resolveRequirements(allRequirements, employmentContext, ownerContext),
     );
+
+    return filterToSupportedSlots(application, resolved).map(enrichRequirement);
+  },
+
+  /*
+   * ============================================================
+   * CUSTOMER DOCUMENT CHECKLIST
+   * ============================================================
+   *
+   * The exact list the customer sees, each slot carrying its own
+   * customer-facing state. An uploaded-but-unreviewed document is
+   * reported as AWAITING_REVIEW, never as missing.
+   */
+
+  async buildChecklist(loanApplicationId) {
+    const application =
+      await loanApplicationRepository.findById(loanApplicationId);
+
+    if (!application) {
+      throw new AppError("Loan application not found", 404);
+    }
+
+    const requirements = await this.resolveForApplication(loanApplicationId);
+    const uploadedDocuments = application.documents || [];
+    const isDraft = application.status === "DRAFT";
+    const canCorrect =
+      isDraft ||
+      application.status === "SUBMITTED" ||
+      application.status === "UNDER_REVIEW";
+
+    const items = requirements.map((requirement) => {
+      const documentsForSlot = uploadedDocuments.filter(
+        (document) =>
+          document.ownerType === requirement.ownerType &&
+          document.documentType === requirement.documentType,
+      );
+
+      const customerState = toCustomerDocumentState(documentsForSlot);
+
+      const activeDocument =
+        documentsForSlot.find((document) => document.status === "VERIFIED") ||
+        documentsForSlot.find((document) => document.status === "PENDING") ||
+        documentsForSlot.find((document) => document.status === "REJECTED") ||
+        null;
+
+      return {
+        key: requirement.key,
+        ownerType: requirement.ownerType,
+        ownerLabel: requirement.ownerLabel,
+        documentType: requirement.documentType,
+        label: requirement.label,
+        isMandatory: requirement.isMandatory,
+        customerState,
+        stateLabel: CUSTOMER_DOCUMENT_STATE_LABELS[customerState],
+        isSatisfied: isSatisfiedCustomerDocumentState(customerState),
+        documentId: activeDocument?.id ?? null,
+        uploadedAt: activeDocument?.createdAt ?? null,
+        rejectionReason:
+          customerState === CUSTOMER_DOCUMENT_STATES.REJECTED
+            ? (activeDocument?.rejectionReason ?? null)
+            : null,
+        canUpload:
+          customerState === CUSTOMER_DOCUMENT_STATES.MISSING
+            ? isDraft
+            : customerState === CUSTOMER_DOCUMENT_STATES.REJECTED && canCorrect,
+        canDelete:
+          isDraft && customerState === CUSTOMER_DOCUMENT_STATES.AWAITING_REVIEW,
+      };
+    });
+
+    const mandatory = items.filter((item) => item.isMandatory);
+
+    return {
+      loanApplicationId,
+      status: application.status,
+      items,
+      summary: {
+        total: items.length,
+        mandatory: mandatory.length,
+        mandatorySatisfied: mandatory.filter((item) => item.isSatisfied).length,
+        missingMandatory: mandatory
+          .filter((item) => !item.isSatisfied)
+          .map((item) => ({
+            key: item.key,
+            label: item.label,
+            ownerLabel: item.ownerLabel,
+          })),
+        isComplete: mandatory.every((item) => item.isSatisfied),
+      },
+    };
   },
 
   /*
@@ -424,18 +572,39 @@ export const loanRequiredDocumentService = {
    * ============================================================
    */
 
+  /*
+   * A document that has been uploaded but not yet reviewed (PENDING)
+   * counts as supplied. Only a REJECTED document leaves the slot open.
+   */
   findMissingMandatoryDocuments(requiredDocuments, uploadedDocuments) {
     const uploadedKeys = new Set(
       uploadedDocuments
         .filter((doc) => doc.status !== "REJECTED")
-        .map((doc) => `${doc.ownerType}:${doc.documentType}`),
+        .map((doc) => requirementKey(doc.ownerType, doc.documentType)),
     );
 
     return requiredDocuments
       .filter((doc) => doc.isMandatory)
       .filter(
-        (doc) => !uploadedKeys.has(`${doc.ownerType}:${doc.documentType}`),
+        (doc) => !uploadedKeys.has(requirementKey(doc.ownerType, doc.documentType)),
       )
-      .map((doc) => `${doc.ownerType}:${doc.documentType}`);
+      .map((doc) => requirementKey(doc.ownerType, doc.documentType));
+  },
+
+  describeMissingMandatoryDocuments(requiredDocuments, uploadedDocuments) {
+    const missingKeys = new Set(
+      this.findMissingMandatoryDocuments(requiredDocuments, uploadedDocuments),
+    );
+
+    return requiredDocuments
+      .filter((doc) =>
+        missingKeys.has(requirementKey(doc.ownerType, doc.documentType)),
+      )
+      .map(
+        (doc) =>
+          `${doc.label || documentLabel(doc.documentType)} for the ${(
+            doc.ownerLabel || documentOwnerLabel(doc.ownerType)
+          ).toLowerCase()}`,
+      );
   },
 };

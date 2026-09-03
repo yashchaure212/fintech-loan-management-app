@@ -41,6 +41,14 @@ export const loanDocumentApi = baseApi.injectEndpoints({
           type: "LoanDocument",
           id: `APPLICATION-${loanApplicationId}`,
         },
+        {
+          type: "LoanDocument",
+          id: `CHECKLIST-${loanApplicationId}`,
+        },
+        {
+          type: "Loan",
+          id: loanApplicationId,
+        },
       ],
     }),
 
@@ -54,6 +62,38 @@ export const loanDocumentApi = baseApi.injectEndpoints({
         {
           type: "LoanDocument",
           id: documentId,
+        },
+        {
+          type: "LoanDocument",
+          id: `APPLICATION-${loanApplicationId}`,
+        },
+        {
+          type: "LoanDocument",
+          id: `CHECKLIST-${loanApplicationId}`,
+        },
+        {
+          type: "Loan",
+          id: loanApplicationId,
+        },
+      ],
+    }),
+
+    /*
+     * The document checklist is resolved by the backend: which slots
+     * apply to THIS application, their customer-facing labels and their
+     * customer-facing state. The UI renders exactly this list, so the
+     * screen and the submission validator can never disagree.
+     */
+    getLoanDocumentChecklist: builder.query({
+      query: (loanApplicationId) => ({
+        url: `/loan-documents/application/${loanApplicationId}/checklist`,
+        method: "GET",
+      }),
+
+      providesTags: (result, error, loanApplicationId) => [
+        {
+          type: "LoanDocument",
+          id: `CHECKLIST-${loanApplicationId}`,
         },
         {
           type: "LoanDocument",
@@ -79,6 +119,7 @@ export const loanDocumentApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useGetLoanDocumentChecklistQuery,
   useGetLoanDocumentsQuery,
   useUploadLoanDocumentMutation,
   useDeleteLoanDocumentMutation,

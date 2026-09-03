@@ -4,6 +4,7 @@ import { loanValidationService } from "./loanValidation.service.js";
 import { loanRequiredDocumentService } from "./loanRequiredDocument.service.js";
 import { generateApplicationNumber } from "../utils/application-number.util.js";
 import { withSignedDocumentUrl } from "./file.service.js";
+import { isSupportedLoanTypeCode } from "../constants/loanProducts.js";
 import AppError from "../utils/AppError.js";
 
 function withSignedDocuments(application) {
@@ -25,6 +26,16 @@ export const loanApplicationService = {
 
     if (!loanType) {
       throw new AppError("Loan type not found or inactive", 404);
+    }
+
+    /*
+     * Only the supported product may be used for a NEW application.
+     * Legacy products remain readable for historical applications but
+     * can never be selected again. Enforced here, in the backend, so a
+     * crafted request cannot bypass the frontend product restriction.
+     */
+    if (!isSupportedLoanTypeCode(loanType.code)) {
+      throw new AppError("This loan product is not available", 400);
     }
 
     const applicationNumber = generateApplicationNumber();
@@ -271,6 +282,25 @@ export const loanApplicationService = {
       }
 
       if (current.status !== "DRAFT") {
+        throw new AppError("Loan application has already been submitted", 400);
+      }
+
+      /*
+       * The conditional update below is the real race guard: only a row
+       * still in DRAFT is transitioned, so a second concurrent submit
+       * updates zero rows and is rejected.
+       */
+      const claimed = await tx.loanApplication.updateMany({
+        where: {
+          id: application.id,
+          status: "DRAFT",
+        },
+        data: {
+          status: "SUBMITTED",
+        },
+      });
+
+      if (claimed.count === 0) {
         throw new AppError("Loan application has already been submitted", 400);
       }
 
