@@ -12,8 +12,8 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import FormInput from "@/components/common/FormInput";
-import FormField from "@/components/common/FormField";
+import FormInput from "@/components/shared/FormInput";
+import FormField from "@/components/shared/FormField";
 import {
   HOME_OWNERSHIP_OPTIONS,
   HOME_OWNERSHIP_VALUES,

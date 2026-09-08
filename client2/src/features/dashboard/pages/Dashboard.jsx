@@ -8,7 +8,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import StatusBadge from "@/components/common/StatusBadge";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { Progress } from "@/components/ui/progress";
 
 import { useGetCustomerDashboardQuery } from "../dashboardApi";

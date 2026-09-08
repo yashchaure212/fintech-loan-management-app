@@ -8,16 +8,36 @@ import AdminLayout from "@/layouts/AdminLayout";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 
-import Landing from "@/pages/Landing";
-import NotFound from "@/pages/NotFound";
+import Landing from "@/pages/public/Landing";
+import NotFound from "@/pages/public/NotFound";
 
-import Login from "@/features/auth/pages/Login";
-import Register from "@/features/auth/pages/Register";
-import ForgotPassword from "@/features/auth/pages/ForgotPassword";
-import ResetPassword from "@/features/auth/pages/ResetPassword";
+import Login from "@/pages/auth/Login";
+import Register from "@/pages/auth/Register";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
+import ResetPassword from "@/pages/auth/ResetPassword";
 
-import Profile from "@/pages/Profile";
-import EmiCalculator from "@/pages/EmiCalculator";
+import Profile from "@/pages/customer/Profile";
+import EmiCalculator from "@/pages/public/EmiCalculator";
+import FullPageLoader from "@/components/shared/FullPageLoader";
+import Menu from "@/pages/public/Menu";
+import More from "@/pages/public/More";
+import Services from "@/pages/public/Services";
+import HelpCentre from "@/pages/public/HelpCentre";
+import FrequentlyAskedQuestions from "@/pages/public/FrequentlyAskedQuestions";
+import ContactSupport from "@/pages/public/ContactSupport";
+import ReportIssue from "@/pages/public/ReportIssue";
+import GrievanceRedressal from "@/pages/public/GrievanceRedressal";
+import AboutLoanPro from "@/pages/public/AboutLoanPro";
+import LoanGuide from "@/pages/public/LoanGuide";
+import Security from "@/pages/public/Security";
+import Privacy from "@/pages/public/Privacy";
+import Terms from "@/pages/public/Terms";
+import LoanTerms from "@/pages/public/LoanTerms";
+import NotificationPreferences from "@/pages/customer/NotificationPreferences";
+import AppExperience from "@/pages/public/AppExperience";
+import KYC from "@/pages/customer/KYC";
+import Notifications from "@/pages/customer/Notifications";
+import SchoolStudentLoan from "@/features/loan/pages/SchoolStudentLoan";
 
 const Dashboard = lazy(() => import("@/features/dashboard/pages/Dashboard"));
 const ApplyLoan = lazy(() => import("@/features/loan/pages/ApplyLoan"));
@@ -25,10 +45,10 @@ const MyLoans = lazy(() => import("@/features/loan/pages/MyLoans"));
 const LoanDetails = lazy(() => import("@/features/loan/pages/LoanDetails"));
 const EmiPayments = lazy(() => import("@/features/emi/pages/EmiPayments"));
 
+const AdminLoans = lazy(() => import("@/features/admin/pages/AdminLoans"));
 const AdminDashboard = lazy(
   () => import("@/features/admin/pages/AdminDashboard"),
 );
-const AdminLoans = lazy(() => import("@/features/admin/pages/AdminLoans"));
 const AdminLoanDetails = lazy(
   () => import("@/features/admin/pages/AdminLoanDetails"),
 );
@@ -36,28 +56,41 @@ const AdminLoanConfiguration = lazy(
   () => import("@/features/admin/pages/AdminLoanConfiguration"),
 );
 
-function RouteLoader() {
-  return (
-    <div className="flex min-h-[50vh] items-center justify-center px-4">
-      <div className="flex flex-col items-center gap-3 text-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary/20 border-t-primary" />
-        <p className="text-sm font-medium text-primary">Loading...</p>
-      </div>
-    </div>
-  );
-}
-
 function AppRoutes() {
   return (
     <BrowserRouter>
-      <Suspense fallback={<RouteLoader />}>
+      <Suspense fallback={<FullPageLoader />}>
         <Routes>
           {/* PUBLIC ROUTES */}
           <Route element={<PublicLayout />}>
             <Route element={<PublicRoute />}>
               <Route path="/" element={<Landing />} />
+              <Route path="/menu" element={<Menu />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/more" element={<More />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/help" element={<HelpCentre />} />
+              <Route path="/faq" element={<FrequentlyAskedQuestions />} />
+              <Route path="/contact-support" element={<ContactSupport />} />
+              <Route path="/report-issue" element={<ReportIssue />} />
+              <Route path="/grievance" element={<GrievanceRedressal />} />
+              <Route path="/app-experience" element={<AppExperience />} />
+              <Route path="/about" element={<AboutLoanPro />} />
+              <Route path="/loan-guide" element={<LoanGuide />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/security" element={<Security />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/loan-terms" element={<LoanTerms />} />
+              <Route
+                path="/notification-preferences"
+                element={<NotificationPreferences />}
+              />
+              <Route
+                path="/school-student-loan"
+                element={<SchoolStudentLoan />}
+              />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
             </Route>
@@ -71,6 +104,7 @@ function AppRoutes() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="profile" element={<Profile />} />
+              <Route path="kyc" element={<KYC />} />
 
               <Route path="loans/apply" element={<ApplyLoan />} />
               <Route path="loans/:id/edit" element={<ApplyLoan />} />

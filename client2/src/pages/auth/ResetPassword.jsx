@@ -1,38 +1,49 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 
-import FormInput from "@/components/common/FormInput";
-import { forgotPasswordSchema } from "../schemas/auth.schema";
-import { useForgotPasswordMutation } from "../authApi";
+import FormInput from "@/components/shared/FormInput";
+import { resetPasswordSchema } from "../../features/auth/schemas/auth.schema";
+import { useResetPasswordMutation } from "../authApi";
 import { Button } from "@/components/ui/button";
 
-function ForgotPassword() {
-  const [forgotPassword, { isLoading }] = useForgotPasswordMutation();
+function ResetPassword() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const token = searchParams.get("token") || "";
+
+  const [resetPassword, { isLoading }] = useResetPasswordMutation();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(forgotPasswordSchema),
+    resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
-      phone: "",
+      token,
+      newPassword: "",
+      confirmPassword: "",
     },
   });
 
   const onSubmit = async (data) => {
     try {
-      const response = await forgotPassword(data).unwrap();
+      await resetPassword({
+        token: data.token,
+        newPassword: data.newPassword,
+      }).unwrap();
 
-      toast.success(
-        response?.message ||
-          "If an account exists for this phone number, a reset link has been sent.",
-      );
+      toast.success("Password updated. Please log in.");
+
+      navigate("/login", {
+        replace: true,
+      });
     } catch (error) {
-      toast.error(error?.data?.message || "Unable to process that request");
+      toast.error(error?.data?.message || "Unable to reset password");
     }
   };
 
@@ -68,12 +79,11 @@ function ForgotPassword() {
             <span className="section-eyebrow">Account recovery</span>
 
             <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-[2rem]">
-              Forgot your password?
+              Create a new password
             </h1>
 
             <p className="mt-2.5 text-sm leading-6 text-muted-foreground">
-              Enter the phone number associated with your account. If it
-              matches, we&apos;ll send a password reset link to your email.
+              Choose a new password for your LoanPro account.
             </p>
           </div>
 
@@ -84,27 +94,49 @@ function ForgotPassword() {
               className="space-y-4"
               noValidate
             >
+              <input type="hidden" {...register("token")} />
+
               <FormInput
-                label="Phone number"
-                name="phone"
-                type="tel"
-                autoComplete="tel"
-                placeholder="Enter phone number"
-                {...register("phone")}
-                error={errors.phone}
+                label="New password"
+                name="newPassword"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Enter new password"
+                {...register("newPassword")}
+                error={errors.newPassword}
               />
+
+              <FormInput
+                label="Confirm password"
+                name="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                placeholder="Confirm new password"
+                {...register("confirmPassword")}
+                error={errors.confirmPassword}
+              />
+
+              {!token && (
+                <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2.5">
+                  <p className="text-xs leading-5 text-destructive">
+                    This reset link is missing a token. Request a new one from
+                    the login page.
+                  </p>
+                </div>
+              )}
 
               <Button
                 type="submit"
                 className="group w-full"
                 size="lg"
+                disabled={!token}
                 loading={isLoading}
               >
                 {isLoading ? (
-                  "Sending..."
+                  "Updating..."
                 ) : (
                   <>
-                    Send reset link
+                    Update password
                     <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
                   </>
                 )}
@@ -134,4 +166,4 @@ function ForgotPassword() {
   );
 }
 
-export default ForgotPassword;
+export default ResetPassword;

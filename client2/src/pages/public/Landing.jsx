@@ -9,57 +9,76 @@ import HowItWorksSection from "@/components/marketing/HowItWorksSection";
 import EligibilitySection from "@/components/marketing/EligibilitySection";
 import FAQSection from "@/components/marketing/FAQSection";
 import PublicFooter from "@/components/marketing/PublicFooter";
-
+import LandingServicesStrip from "@/components/marketing/LandingServicesStrip";
 import LoanDraftResumeCard from "@/components/marketing/LoanDraftResumeCard";
 
 function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main>
+        {/* Quick product navigation */}
         <LandingQuickLinks />
 
-        {/* =====================================================
-            RESUME SAVED LOAN APPLICATION
-        ===================================================== */}
-
-        <LoanDraftResumeCard />
-
-        <LandingHero />
-
         {/* Promotional announcement */}
-        <section className="border-b border-border bg-[#fffaf2] px-3 py-2.5 sm:px-6 lg:px-8">
-          <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 border border-[#eadfca] bg-white px-3 py-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <span className="shrink-0 rounded-sm bg-orange-500 px-1.5 py-1 text-[9px] font-bold uppercase text-white">
-                Featured
-              </span>
+        <section className="border-b border-[#eadfca] bg-[#fff8e9] px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6">
+          <div className="mx-auto max-w-[1440px]">
+            <div className="relative flex items-center justify-between gap-3 overflow-hidden rounded-lg border border-[#f0d9a6] bg-white px-3 py-2.5 shadow-sm sm:px-4">
+              <div className="pointer-events-none absolute -right-6 -top-8 h-20 w-20 rounded-full bg-orange-100/70" />
+              <div className="pointer-events-none absolute -bottom-10 right-20 h-16 w-16 rounded-full bg-yellow-100/60" />
 
-              <p className="truncate text-xs font-semibold">
-                Education loan applications are available online.
-              </p>
+              <div className="relative flex min-w-0 items-center gap-2.5 sm:gap-3">
+                <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-white shadow-sm sm:px-3 sm:text-[10px]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                  Featured
+                </div>
+
+                <div className="min-w-0">
+                  <p className="truncate text-[11px] font-bold text-slate-800 sm:text-xs">
+                    Education loan applications are now available online
+                  </p>
+
+                  <p className="hidden text-[10px] text-slate-500 sm:block">
+                    Start your application and manage your journey digitally.
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href="#loan-products"
+                className="relative flex shrink-0 items-center gap-1 rounded-full bg-[hsl(var(--brand-navy))] px-3 py-1.5 text-[10px] font-bold text-white transition hover:opacity-90 sm:px-4 sm:py-2 sm:text-xs"
+              >
+                Explore
+                <span aria-hidden="true">→</span>
+              </a>
             </div>
-
-            <a
-              href="#loan-products"
-              className="shrink-0 text-xs font-bold text-primary"
-            >
-              Explore
-            </a>
           </div>
         </section>
 
-        <LandingLoanShowcase />
+        {/* Main promotional hero */}
+        <LandingHero />
 
-        <LandingOffers />
+        {/* Bills and recharges */}
+        <LandingServicesStrip />
 
+        {/* Consumer finance categories */}
         <LandingFinanceCategories />
 
+        {/* Loan marketplace */}
+        <LandingLoanShowcase />
+
+        {/* Promotional offers */}
+        <LandingOffers />
+
+        {/* Trust / reassurance */}
         <LandingTrustStrip />
 
+        {/* EMI utility */}
         <EMICalculatorPreview />
 
+        {/* Loan journey */}
         <HowItWorksSection />
 
+        {/* Eligibility / application readiness */}
         <EligibilitySection />
 
         {/* Final CTA */}
@@ -91,6 +110,7 @@ function Landing() {
           </div>
         </section>
 
+        {/* Help */}
         <FAQSection />
       </main>
 

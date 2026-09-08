@@ -15,7 +15,7 @@ import { useGetApplicableLoanConfigurationQuery } from "../api/loanConfiguration
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import FormInput from "@/components/common/FormInput";
+import FormInput from "@/components/shared/FormInput";
 
 import { LoanWizardShell, LoanWizardActions } from "./LoanWizardShell";
 

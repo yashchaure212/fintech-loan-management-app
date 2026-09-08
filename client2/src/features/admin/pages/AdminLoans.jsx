@@ -19,7 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import StatusBadge from "@/components/common/StatusBadge";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { formatCurrency } from "@/features/loan/utils/loanFormatters";
 
 import { useGetAdminLoansQuery } from "../api/adminLoanApi";

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import StatusBadge from "@/components/common/StatusBadge";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { LoanWizardShell, LoanWizardActions } from "./LoanWizardShell";
 import { formatCurrency } from "../utils/loanFormatters";
 import {

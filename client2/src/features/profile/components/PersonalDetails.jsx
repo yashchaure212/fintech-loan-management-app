@@ -3,7 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-hot-toast";
 
-import FormInput from "@/components/common/FormInput";
+import FormInput from "@/components/shared/FormInput";
+import { Button } from "@/components/ui/button";
 
 import { personalDetailsSchema } from "../schemas/profile.schema";
 
@@ -12,12 +13,11 @@ import {
   useUpdateProfileMutation,
 } from "../api/profileApi";
 
-import { Button } from "@/components/ui/button";
-
 function PersonalDetails() {
   const { data, isLoading } = useGetProfileQuery();
 
-  const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
+  const [updateProfile, { isLoading: isUpdating }] =
+    useUpdateProfileMutation();
 
   const {
     register,
@@ -31,8 +31,7 @@ function PersonalDetails() {
       firstName: "",
       dateOfBirth: "",
       gender: "",
-      panNumber: "",
-      aadhaarNumber: "",
+      occupation: "",
     },
   });
 
@@ -42,8 +41,7 @@ function PersonalDetails() {
         firstName: data.data.firstName || "",
         dateOfBirth: data.data.dateOfBirth?.split("T")[0] || "",
         gender: data.data.gender || "",
-        panNumber: data.data.panNumber || "",
-        aadhaarNumber: data.data.aadhaarNumber || "",
+        occupation: data.data.occupation || "",
       });
     }
   }, [data, reset]);
@@ -59,9 +57,11 @@ function PersonalDetails() {
 
       await updateProfile(payload).unwrap();
 
-      toast.success("Profile updated successfully");
+      toast.success("Personal details updated successfully");
     } catch (error) {
-      toast.error(error?.data?.message || "Failed to update profile");
+      toast.error(
+        error?.data?.message || "Failed to update personal details",
+      );
     }
   };
 
@@ -70,7 +70,9 @@ function PersonalDetails() {
       <div className="flex min-h-48 items-center justify-center">
         <div className="text-center">
           <div className="mx-auto mb-3 h-5 w-5 animate-spin rounded-full border-2 border-[hsl(var(--primary)/0.2)] border-t-[hsl(var(--primary))]" />
-          <p className="text-sm text-secondary">Loading profile...</p>
+          <p className="text-sm text-secondary">
+            Loading personal details...
+          </p>
         </div>
       </div>
     );
@@ -78,16 +80,8 @@ function PersonalDetails() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="form-section space-y-6">
-        {/* Section Header */}
-        <div>
-          <h3 className="section-title">Personal Information</h3>
-          <p className="text-helper mt-1">
-            Keep your personal and identification details up to date.
-          </p>
-        </div>
-
-        {/* Basic Information */}
+      <div className="space-y-6">
+        {/* BASIC INFORMATION */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <FormInput
             label="First Name"
@@ -106,7 +100,7 @@ function PersonalDetails() {
           />
         </div>
 
-        {/* Gender */}
+        {/* GENDER */}
         <div className="space-y-2">
           <label htmlFor="gender" className="text-label">
             Gender
@@ -115,7 +109,7 @@ function PersonalDetails() {
           <select
             id="gender"
             {...register("gender")}
-            className="h-11 w-full rounded-[var(--radius-md)] border border-default bg-[hsl(var(--card))] px-3 text-sm text-primary transition-colors duration-150 focus-visible:outline-none focus-visible:border-[hsl(var(--primary))] focus-visible:shadow-[0_0_0_2px_hsl(var(--background)),0_0_0_4px_hsl(var(--primary)/0.18)]"
+            className="h-11 w-full rounded-md border border-default bg-card px-3 text-sm text-primary transition-colors duration-150 focus-visible:outline-none focus-visible:border-primary focus-visible:shadow-[0_0_0_2px_hsl(var(--background)),0_0_0_4px_hsl(var(--primary)/0.18)]"
           >
             <option value="">Select Gender</option>
             <option value="MALE">Male</option>
@@ -124,42 +118,40 @@ function PersonalDetails() {
           </select>
 
           {errors.gender && (
-            <p className="text-sm text-destructive">{errors.gender.message}</p>
+            <p className="text-sm text-destructive">
+              {errors.gender.message}
+            </p>
           )}
         </div>
 
-        {/* Identity Information */}
+        {/* OCCUPATION */}
         <div className="border-t border-subtle pt-5">
           <div className="mb-5">
-            <p className="text-label">Identity Information</p>
+            <p className="text-label">Professional information</p>
+
             <p className="text-helper mt-1">
-              Enter your government identification details as they appear on
-              your documents.
+              Add your current occupation. Detailed employment and income
+              information will be collected separately when required for a
+              loan application.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <FormInput
-              label="PAN Number"
-              name="panNumber"
-              {...register("panNumber")}
-              placeholder="ABCDE1234F"
-              error={errors.panNumber}
-            />
-
-            <FormInput
-              label="Aadhaar Number"
-              name="aadhaarNumber"
-              {...register("aadhaarNumber")}
-              placeholder="123456789012"
-              error={errors.aadhaarNumber}
-            />
-          </div>
+          <FormInput
+            label="Occupation"
+            name="occupation"
+            {...register("occupation")}
+            placeholder="e.g. Student, Software Developer, Business Owner"
+            error={errors.occupation}
+          />
         </div>
 
-        {/* Actions */}
+        {/* ACTION */}
         <div className="flex flex-col-reverse gap-3 border-t border-subtle pt-5 sm:flex-row sm:justify-end">
-          <Button type="submit" disabled={isUpdating} className="min-h-11 px-6">
+          <Button
+            type="submit"
+            disabled={isUpdating}
+            className="min-h-11 px-6"
+          >
             {isUpdating ? "Saving..." : "Save Personal Details"}
           </Button>
         </div>

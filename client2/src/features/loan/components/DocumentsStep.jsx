@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import FormField from "@/components/common/FormField";
+import FormField from "@/components/shared/FormField";
 import { CUSTOMER_DOCUMENT_STATE_LABELS } from "../constants/loanEnums";
 
 import { LoanWizardShell, LoanWizardActions } from "./LoanWizardShell";
@@ -57,7 +57,6 @@ const DOCUMENT_TYPE_LABELS = {
   CONTRACT_LETTER: "Contract Letter",
   PASSPORT: "Passport",
   OTHER: "Other",
-  BIRTH_CERTIFICATE: "Birth Certificate",
   ADDRESS_PROOF: "Address Proof",
   SCHOOL_ADMISSION_PROOF: "School Admission / Continuation Proof",
   PREVIOUS_CLASS_RESULT: "Previous Class Result",
@@ -139,11 +138,22 @@ function DocumentsStep({
     return Array.isArray(documentsData?.data) ? documentsData.data : [];
   }, [documentsData]);
 
-  const requiredDocuments = useMemo(() => {
-    const items = requirementsData?.data?.items;
+const requiredDocuments = useMemo(() => {
+  const items = requirementsData?.data?.items;
 
-    return Array.isArray(items) ? items : [];
-  }, [requirementsData]);
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  const hiddenDocumentTypes = new Set([
+    "BIRTH_CERTIFICATE",
+    "PREVIOUS_CLASS_RESULT",
+  ]);
+
+  return items.filter(
+    (item) => !hiddenDocumentTypes.has(item.documentType),
+  );
+}, [requirementsData]);
 
   /*
    * ============================================================

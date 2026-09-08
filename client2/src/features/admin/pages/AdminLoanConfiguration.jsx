@@ -21,8 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import FormInput from "@/components/common/FormInput";
-import FormField from "@/components/common/FormField";
+import FormInput from "@/components/shared/FormInput";
+import FormField from "@/components/shared/FormField";
 import { selectClassName } from "@/features/loan/components/LoanWizardShell";
 
 /* =========================================================

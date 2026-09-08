@@ -1,9 +1,15 @@
-import { Link } from "react-router-dom";
-import { ArrowRight, Calculator, Percent, CalendarDays, IndianRupee } from "lucide-react";
+import {
+  ArrowRight,
+  Calculator,
+  CalendarDays,
+  IndianRupee,
+  Percent,
+} from "lucide-react";
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 function formatCurrency(value) {
   return `₹${Math.max(0, Math.round(value || 0)).toLocaleString("en-IN")}`;
@@ -31,6 +37,7 @@ const inputs = [
     icon: IndianRupee,
     min: 0,
     step: 10000,
+    placeholder: "Enter amount",
   },
   {
     key: "rate",
@@ -38,6 +45,7 @@ const inputs = [
     icon: Percent,
     min: 0,
     step: 0.1,
+    placeholder: "Enter rate",
   },
   {
     key: "tenure",
@@ -45,6 +53,7 @@ const inputs = [
     icon: CalendarDays,
     min: 1,
     step: 1,
+    placeholder: "Enter tenure",
   },
 ];
 
@@ -53,15 +62,11 @@ function EMICalculatorPreview() {
   const [rate, setRate] = useState(10);
   const [tenure, setTenure] = useState(36);
 
-  const values = { amount, rate, tenure };
-
-  const emi = useMemo(
-    () => calculateEmi(amount, rate, tenure),
-    [amount, rate, tenure],
-  );
-
-  const totalPayment = emi * Math.max(0, tenure || 0);
-  const totalInterest = Math.max(0, totalPayment - Math.max(0, amount || 0));
+  const values = {
+    amount,
+    rate,
+    tenure,
+  };
 
   const setters = {
     amount: setAmount,
@@ -69,121 +74,191 @@ function EMICalculatorPreview() {
     tenure: setTenure,
   };
 
+  const emi = useMemo(
+    () => calculateEmi(amount, rate, tenure),
+    [amount, rate, tenure],
+  );
+
+  const totalPayment = emi * Math.max(0, tenure || 0);
+
+  const totalInterest = Math.max(
+    0,
+    totalPayment - Math.max(0, amount || 0),
+  );
+
+  const tenureProgress = Math.min(
+    100,
+    Math.max(4, (Math.max(0, tenure || 0) / 84) * 100),
+  );
+
   return (
-    <section id="emi-preview" className="scroll-mt-24 px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+    <section
+      id="emi-preview"
+      className="scroll-mt-24 border-b border-border bg-[#f7fafc] px-3 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12"
+    >
       <div className="mx-auto max-w-[1440px]">
-        <div className="overflow-hidden rounded-lg border border-border bg-card shadow-card">
-          <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="relative overflow-hidden bg-brand-gradient p-6 text-white sm:p-8 lg:p-10">
-              <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full border border-white/10" />
-              <div className="pointer-events-none absolute -bottom-32 -left-20 h-72 w-72 rounded-full bg-cyan-300/10 blur-3xl" />
+        {/* Header */}
+        <div className="max-w-2xl">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
 
-              <div className="relative">
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
-                  <Calculator className="h-5 w-5" />
-                </span>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-primary sm:text-xs">
+              EMI calculator
+            </p>
+          </div>
 
-                <p className="mt-6 text-xs font-semibold uppercase tracking-[0.12em] text-sky-100">
-                  EMI calculator
-                </p>
+          <h2 className="mt-1.5 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl lg:text-3xl">
+            Plan your monthly repayment
+          </h2>
 
-                <h2 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                  Plan the repayment before you apply.
-                </h2>
+          <p className="mt-1.5 text-xs leading-5 text-muted-foreground sm:text-sm">
+            Adjust the loan amount, rate and tenure to see an estimated EMI
+            before you apply.
+          </p>
+        </div>
 
-                <p className="mt-4 max-w-lg text-sm leading-6 text-white/72 sm:text-base">
-                  Adjust the amount, interest rate, and tenure to explore an
-                  estimated monthly repayment.
-                </p>
-
-                <div className="mt-8 space-y-4">
-                  {inputs.map((item) => {
-                    const Icon = item.icon;
-
-                    return (
-                      <div key={item.key}>
-                        <label
-                          htmlFor={`emi-${item.key}`}
-                          className="text-xs font-medium text-white/75"
-                        >
-                          {item.label}
-                        </label>
-
-                        <div className="relative mt-1.5">
-                          <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45" />
-
-                          <Input
-                            id={`emi-${item.key}`}
-                            type="number"
-                            min={item.min}
-                            step={item.step}
-                            value={values[item.key]}
-                            onChange={(event) =>
-                              setters[item.key](Number(event.target.value))
-                            }
-                            className="h-11 border-white/15 bg-white/10 pl-9 text-white placeholder:text-white/40 focus-visible:ring-white/30"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
+        {/* Calculator */}
+        <div className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.05)]">
+          <div className="grid lg:grid-cols-[1.05fr_0.95fr]">
+            {/* Left - inputs */}
+            <div className="border-b border-slate-200 p-4 sm:p-6 lg:border-b-0 lg:border-r lg:p-8">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#eaf3f9] text-primary">
+                  <Calculator className="h-5 w-5" strokeWidth={1.8} />
                 </div>
 
-                <Link to="/emi-calculator" className="mt-7 inline-block">
-                  <Button className="bg-white text-[hsl(var(--brand-navy))] hover:bg-white/90">
-                    Open full EMI calculator
-                    <ArrowRight className="ml-2 h-4 w-4" />
+                <div>
+                  <p className="text-sm font-bold text-slate-900">
+                    EMI calculator
+                  </p>
+
+                  <p className="text-[10px] text-muted-foreground sm:text-xs">
+                    Enter your preferred loan details
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+                {inputs.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <div key={item.key}>
+                      <label
+                        htmlFor={`emi-${item.key}`}
+                        className="text-[11px] font-semibold text-slate-700 sm:text-xs"
+                      >
+                        {item.label}
+                      </label>
+
+                      <div className="relative mt-1.5">
+                        <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+                        <Input
+                          id={`emi-${item.key}`}
+                          type="number"
+                          min={item.min}
+                          step={item.step}
+                          value={values[item.key]}
+                          placeholder={item.placeholder}
+                          onChange={(event) =>
+                            setters[item.key](Number(event.target.value))
+                          }
+                          className="h-11 border-slate-200 bg-white pl-9 text-sm font-medium text-slate-900 shadow-none focus-visible:ring-1 focus-visible:ring-primary/30"
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center lg:flex-col lg:items-start">
+                <Link to="/emi-calculator">
+                  <Button className="h-10 bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary-hover">
+                    Open full calculator
+                    <ArrowRight className="ml-2 h-3.5 w-3.5" />
                   </Button>
                 </Link>
+
+                <p className="text-[10px] leading-4 text-muted-foreground">
+                  Estimates are illustrative and may differ from the final
+                  applicable terms.
+                </p>
               </div>
             </div>
 
-            <div className="bg-surface-blue p-6 sm:p-8 lg:p-10">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            {/* Right - result */}
+            <div className="bg-[#edf7fc] p-4 sm:p-6 lg:p-8">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-[11px] font-semibold text-muted-foreground sm:text-xs">
                     Estimated monthly EMI
                   </p>
 
-                  <p className="mt-1 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+                  <p className="mt-1 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
                     {formatCurrency(emi)}
                   </p>
                 </div>
 
-                <span className="inline-flex w-fit rounded-full border border-primary/15 bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
-                  Example estimate
+                <span className="shrink-0 rounded-full border border-primary/15 bg-white px-2.5 py-1 text-[9px] font-bold text-primary sm:text-[10px]">
+                  Estimate
                 </span>
               </div>
 
-              <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
-                Calculator values are illustrative. Final pricing, eligibility,
-                fees, and repayment terms depend on the applicable loan
-                configuration.
-              </p>
+              {/* Summary */}
+              <div className="mt-5 grid grid-cols-3 gap-2.5 sm:gap-3">
+                <SummaryCard
+                  label="Principal"
+                  value={formatCurrency(amount)}
+                />
 
-              <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                <SummaryCard label="Principal" value={formatCurrency(amount)} />
-                <SummaryCard label="Estimated interest" value={formatCurrency(totalInterest)} />
-                <SummaryCard label="Estimated repayment" value={formatCurrency(totalPayment)} />
+                <SummaryCard
+                  label="Interest"
+                  value={formatCurrency(totalInterest)}
+                />
+
+                <SummaryCard
+                  label="Total repayment"
+                  value={formatCurrency(totalPayment)}
+                />
               </div>
 
-              <div className="mt-6 rounded-xl border border-border bg-card p-4">
+              {/* Tenure */}
+              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3.5 sm:p-4">
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm text-muted-foreground">Tenure</span>
-                  <span className="text-sm font-semibold tabular-nums">
-                    {Math.max(0, tenure || 0)} months
-                  </span>
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Tenure
+                    </p>
+
+                    <p className="mt-0.5 text-sm font-bold text-slate-900">
+                      {Math.max(0, tenure || 0)} months
+                    </p>
+                  </div>
+
+                  <CalendarDays className="h-4 w-4 text-primary" />
                 </div>
 
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
                   <div
-                    className="h-full rounded-full bg-brand-gradient"
+                    className="h-full rounded-full bg-brand-gradient transition-all duration-300"
                     style={{
-                      width: `${Math.min(100, Math.max(4, (Math.max(0, tenure || 0) / 84) * 100))}%`,
+                      width: `${tenureProgress}%`,
                     }}
                   />
                 </div>
+
+                <div className="mt-1.5 flex justify-between text-[9px] text-muted-foreground">
+                  <span>1 month</span>
+                  <span>84 months</span>
+                </div>
               </div>
+
+              {/* Disclaimer */}
+              <p className="mt-4 text-[9px] leading-4 text-muted-foreground sm:text-[10px]">
+                Final interest rates, fees, eligibility and repayment terms
+                depend on the applicable loan product and review.
+              </p>
             </div>
           </div>
         </div>
@@ -194,9 +269,14 @@ function EMICalculatorPreview() {
 
 function SummaryCard({ label, value }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1.5 text-base font-semibold tabular-nums">{value}</p>
+    <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-3 sm:p-3.5">
+      <p className="truncate text-[9px] font-medium text-muted-foreground sm:text-[10px]">
+        {label}
+      </p>
+
+      <p className="mt-1 truncate text-xs font-bold tabular-nums text-slate-900 sm:text-sm">
+        {value}
+      </p>
     </div>
   );
 }

@@ -14,7 +14,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import StatusBadge from "@/components/common/StatusBadge";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { getStatusConfig } from "@/lib/status";
 
 import { useGetLoanApplicationQuery } from "../api/loanApi";

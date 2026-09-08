@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import FormField from "@/components/common/FormField";
+import FormField from "@/components/shared/FormField";
 
 function FormInput({
   label,

@@ -11,8 +11,8 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import FormInput from "@/components/common/FormInput";
-import FormField from "@/components/common/FormField";
+import FormInput from "@/components/shared/FormInput";
+import FormField from "@/components/shared/FormField";
 import {
   SALARY_FREQUENCIES,
   SALARY_FREQUENCY_VALUES,

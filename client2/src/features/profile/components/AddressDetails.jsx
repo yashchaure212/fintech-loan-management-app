@@ -2,13 +2,9 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-hot-toast";
-
-import FormInput from "@/components/common/FormInput";
-
+import FormInput from "@/components/shared/FormInput";
 import { Button } from "@/components/ui/button";
-
 import { addressSchema } from "../schemas/profile.schema";
-
 import {
   useGetAddressQuery,
   useCreateAddressMutation,
@@ -17,12 +13,9 @@ import {
 
 function AddressDetails() {
   const [createAddress, { isLoading: isCreating }] = useCreateAddressMutation();
-
   const [updateAddress, { isLoading: isUpdating }] = useUpdateAddressMutation();
-
   const { data, isLoading } = useGetAddressQuery();
   const existingAddress = data?.data?.[0];
-
   const {
     register,
     handleSubmit,
@@ -44,7 +37,6 @@ function AddressDetails() {
   useEffect(() => {
     if (data?.data?.length) {
       const address = data.data[0];
-
       reset({
         type: address.type || "CURRENT",
         line1: address.line1 || "",
@@ -63,11 +55,9 @@ function AddressDetails() {
           id: existingAddress.id,
           ...formData,
         }).unwrap();
-
         toast.success("Address updated successfully");
       } else {
         await createAddress(formData).unwrap();
-
         toast.success("Address created successfully");
       }
     } catch (error) {

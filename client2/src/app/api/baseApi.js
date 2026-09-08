@@ -1,5 +1,4 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
 import { logout, setTokens } from "@/features/auth/authSlice";
 
 const rawBaseQuery = fetchBaseQuery({
@@ -33,15 +32,11 @@ const getRequestUrl = (args) =>
 
 const isAuthRoute = (url = "") => {
   const path = url.split("?")[0];
-
-  return AUTH_ROUTES.some(
-    (route) => path === route || path.endsWith(route),
-  );
+  return AUTH_ROUTES.some((route) => path === route || path.endsWith(route));
 };
 
 const isRefreshRoute = (url = "") => {
   const path = url.split("?")[0];
-
   return path === "/auth/refresh-token" || path.endsWith("/auth/refresh-token");
 };
 
@@ -49,11 +44,9 @@ const REFRESH_LOCK = "fintech-auth-refresh";
 
 const applyRefreshResult = (api, refreshResult) => {
   const newAccessToken = refreshResult.data?.data?.accessToken;
-
   if (newAccessToken) {
     api.dispatch(setTokens({ accessToken: newAccessToken }));
   }
-
   return refreshResult;
 };
 
@@ -144,9 +137,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 
 export const baseApi = createApi({
   reducerPath: "api",
-
   baseQuery: baseQueryWithReauth,
-
   tagTypes: [
     "Auth",
     "Profile",

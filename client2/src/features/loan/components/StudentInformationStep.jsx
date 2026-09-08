@@ -1,21 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "react-hot-toast";
-import { Check, GraduationCap, Search } from "lucide-react";
+import {
+  Check,
+  GraduationCap,
+  Search,
+  X,
+} from "lucide-react";
 
 import {
   useGetSchoolLoanDetailsQuery,
   useCreateSchoolLoanDetailsMutation,
   useUpdateSchoolLoanDetailsMutation,
 } from "../api/schoolLoanApi";
-import { useSearchInstitutionsQuery } from "../api/institutionApi";
+
+import { YAVATMAL_PRIVATE_SCHOOLS } from "../data/schools";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import FormInput from "@/components/common/FormInput";
-import FormField from "@/components/common/FormField";
+import FormInput from "@/components/shared/FormInput";
+import FormField from "@/components/shared/FormField";
+
 import {
   LoanWizardShell,
   LoanWizardActions,
@@ -37,46 +44,116 @@ const SCHOOL_CLASSES = [
   "CLASS_12",
 ];
 
-const classLabel = (value) => value?.replace("CLASS_", "Class ") || "";
+const classLabel = (value) =>
+  value?.replace("CLASS_", "Class ") || "";
 
 const studentSchema = z
   .object({
-    studentName: z.string().trim().min(2, "Student name is required"),
-    dateOfBirth: z.string().min(1, "Date of birth is required"),
-    gender: z.enum(["MALE", "FEMALE", "OTHER"]),
+    studentName: z
+      .string()
+      .trim()
+      .min(2, "Student name is required"),
+
+    dateOfBirth: z
+      .string()
+      .min(1, "Date of birth is required"),
+
+    gender: z.enum(
+      ["MALE", "FEMALE", "OTHER"],
+      {
+        errorMap: () => ({
+          message: "Select gender",
+        }),
+      },
+    ),
+
     mobile: z
       .string()
       .trim()
-      .regex(/^[6-9]\d{9}$/, "Invalid Indian mobile number")
+      .regex(
+        /^[6-9]\d{9}$/,
+        "Invalid Indian mobile number",
+      )
       .optional()
       .or(z.literal("")),
-    email: z.string().trim().email().optional().or(z.literal("")),
+
+    email: z
+      .string()
+      .trim()
+      .email("Enter a valid email address")
+      .optional()
+      .or(z.literal("")),
+
     aadhaarNumber: z
       .string()
       .trim()
-      .regex(/^\d{12}$/, "Aadhaar must contain 12 digits")
+      .regex(
+        /^\d{12}$/,
+        "Aadhaar must contain 12 digits",
+      )
       .optional()
       .or(z.literal("")),
+
+    currentSchoolName: z
+      .string()
+      .trim()
+      .min(1, "School name is required"),
+
     /*
-     * A school student does not have a PAN, so it is not collected.
-     * School type is internal institution metadata and is never
-     * entered by the customer.
+     * Do not use this as the local school catalog ID.
+     * Backend expects a UUID here.
+     *
+     * We keep this optional for now and send null
+     * until schools are connected to the backend
+     * Institution table.
      */
+    institutionId: z
+      .string()
+      .optional()
+      .or(z.literal("")),
 
-    currentSchoolName: z.string().trim().min(1, "School name is required"),
-    institutionId: z.string().optional(),
-    currentClass: z.enum(SCHOOL_CLASSES, {
-      errorMap: () => ({ message: "Select the current class" }),
-    }),
-    academicYear: z.string().trim().min(4, "Academic year is required"),
-    continuingSameSchool: z.boolean().default(true),
+    currentClass: z.enum(
+      SCHOOL_CLASSES,
+      {
+        errorMap: () => ({
+          message: "Select the current class",
+        }),
+      },
+    ),
 
-    previousSchoolName: z.string().trim().optional(),
-    newSchoolName: z.string().trim().optional(),
-    expectedJoiningDate: z.string().optional(),
+    academicYear: z
+      .string()
+      .trim()
+      .min(4, "Academic year is required"),
 
-    previousClass: z.enum(SCHOOL_CLASSES).optional().or(z.literal("")),
-    previousAcademicYear: z.string().trim().optional(),
+    continuingSameSchool: z
+      .boolean()
+      .default(true),
+
+    previousSchoolName: z
+      .string()
+      .trim()
+      .optional(),
+
+    newSchoolName: z
+      .string()
+      .trim()
+      .optional(),
+
+    expectedJoiningDate: z
+      .string()
+      .optional(),
+
+    previousClass: z
+      .enum(SCHOOL_CLASSES)
+      .optional()
+      .or(z.literal("")),
+
+    previousAcademicYear: z
+      .string()
+      .trim()
+      .optional(),
+
     previousClassPercentage: z
       .string()
       .trim()
@@ -96,7 +173,8 @@ const studentSchema = z
         ctx.addIssue({
           code: "custom",
           path: ["newSchoolName"],
-          message: "New school name is required when changing school",
+          message:
+            "New school name is required when changing school",
         });
       }
 
@@ -104,7 +182,8 @@ const studentSchema = z
         ctx.addIssue({
           code: "custom",
           path: ["expectedJoiningDate"],
-          message: "Expected joining date is required when changing school",
+          message:
+            "Expected joining date is required when changing school",
         });
       }
     }
@@ -132,36 +211,47 @@ const emptyValues = {
 
 function toDateInputValue(value) {
   if (!value) return "";
+
   return String(value).slice(0, 10);
 }
 
-function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
+function StudentInformationStep({
+  loanApplicationId,
+  onBack,
+  onNext,
+}) {
   const {
     data,
     isLoading: isFetching,
     isError: isFetchError,
     error: fetchError,
-  } = useGetSchoolLoanDetailsQuery(loanApplicationId, {
-    skip: !loanApplicationId,
-  });
-
-  const [createSchoolLoanDetails, { isLoading: isCreating }] =
-    useCreateSchoolLoanDetailsMutation();
-
-  const [updateSchoolLoanDetails, { isLoading: isUpdating }] =
-    useUpdateSchoolLoanDetailsMutation();
-
-  const isSaving = isCreating || isUpdating;
-  const existingDetails = data?.data;
-
-  const [schoolQuery, setSchoolQuery] = useState("");
-
-  const { data: searchResults } = useSearchInstitutionsQuery(
-    { q: schoolQuery },
-    { skip: schoolQuery.trim().length < 2 },
+  } = useGetSchoolLoanDetailsQuery(
+    loanApplicationId,
+    {
+      skip: !loanApplicationId,
+    },
   );
 
-  const schoolSuggestions = searchResults?.data || [];
+  const [
+    createSchoolLoanDetails,
+    { isLoading: isCreating },
+  ] = useCreateSchoolLoanDetailsMutation();
+
+  const [
+    updateSchoolLoanDetails,
+    { isLoading: isUpdating },
+  ] = useUpdateSchoolLoanDetailsMutation();
+
+  const isSaving =
+    isCreating || isUpdating;
+
+  const existingDetails = data?.data;
+
+  const [schoolSearch, setSchoolSearch] =
+    useState("");
+
+  const [schoolDropdownOpen, setSchoolDropdownOpen] =
+    useState(false);
 
   const {
     register,
@@ -175,65 +265,238 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
     defaultValues: emptyValues,
   });
 
-  const continuingSameSchool = watch("continuingSameSchool");
-  const selectedSchool = watch("institutionId");
+  const continuingSameSchool = watch(
+    "continuingSameSchool",
+  );
+
+  const selectedSchoolName = watch(
+    "currentSchoolName",
+  );
+
+  /*
+   * =========================================================
+   * SCHOOL SEARCH
+   * =========================================================
+   */
+
+  const schoolSuggestions = useMemo(() => {
+    const query = schoolSearch
+      .trim()
+      .toLowerCase();
+
+    if (!query) {
+      return YAVATMAL_PRIVATE_SCHOOLS;
+    }
+
+    return YAVATMAL_PRIVATE_SCHOOLS.filter(
+      (school) =>
+        school.name
+          .toLowerCase()
+          .includes(query) ||
+        school.board
+          .toLowerCase()
+          .includes(query),
+    );
+  }, [schoolSearch]);
+
+  /*
+   * =========================================================
+   * LOAD EXISTING DETAILS
+   * =========================================================
+   */
 
   useEffect(() => {
     if (!existingDetails) return;
 
     reset({
-      studentName: existingDetails.studentName || "",
-      dateOfBirth: toDateInputValue(existingDetails.dateOfBirth),
-      gender: existingDetails.gender || "MALE",
-      mobile: existingDetails.mobile || "",
-      email: existingDetails.email || "",
-      aadhaarNumber: existingDetails.aadhaarNumber || "",
-      currentSchoolName: existingDetails.currentSchoolName || "",
-      institutionId: existingDetails.institutionId || "",
-      currentClass: existingDetails.currentClass || "CLASS_1",
-      academicYear: existingDetails.academicYear || "",
-      continuingSameSchool: existingDetails.continuingSameSchool ?? true,
-      previousSchoolName: existingDetails.previousSchoolName || "",
-      newSchoolName: existingDetails.newSchoolName || "",
-      expectedJoiningDate: toDateInputValue(
-        existingDetails.expectedJoiningDate,
-      ),
-      previousClass: existingDetails.previousClass || "",
-      previousAcademicYear: existingDetails.previousAcademicYear || "",
+      studentName:
+        existingDetails.studentName || "",
+
+      dateOfBirth:
+        toDateInputValue(
+          existingDetails.dateOfBirth,
+        ),
+
+      gender:
+        existingDetails.gender || "MALE",
+
+      mobile:
+        existingDetails.mobile || "",
+
+      email:
+        existingDetails.email || "",
+
+      aadhaarNumber:
+        existingDetails.aadhaarNumber || "",
+
+      currentSchoolName:
+        existingDetails.currentSchoolName || "",
+
+      /*
+       * Only use the backend UUID if one already exists.
+       * Never convert the local school catalog value into
+       * institutionId.
+       */
+      institutionId:
+        existingDetails.institutionId || "",
+
+      currentClass:
+        existingDetails.currentClass ||
+        "CLASS_1",
+
+      academicYear:
+        existingDetails.academicYear || "",
+
+      continuingSameSchool:
+        existingDetails.continuingSameSchool ??
+        true,
+
+      previousSchoolName:
+        existingDetails.previousSchoolName || "",
+
+      newSchoolName:
+        existingDetails.newSchoolName || "",
+
+      expectedJoiningDate:
+        toDateInputValue(
+          existingDetails.expectedJoiningDate,
+        ),
+
+      previousClass:
+        existingDetails.previousClass || "",
+
+      previousAcademicYear:
+        existingDetails.previousAcademicYear || "",
+
       previousClassPercentage:
-        existingDetails.previousClassPercentage != null
-          ? String(existingDetails.previousClassPercentage)
+        existingDetails.previousClassPercentage !=
+        null
+          ? String(
+              existingDetails.previousClassPercentage,
+            )
           : "",
     });
+
+    setSchoolSearch(
+      existingDetails.currentSchoolName || "",
+    );
   }, [existingDetails, reset]);
+
+  /*
+   * =========================================================
+   * SELECT SCHOOL
+   * =========================================================
+   */
+
+  const handleSchoolSelect = (school) => {
+    setValue(
+      "currentSchoolName",
+      school.name,
+      {
+        shouldValidate: true,
+        shouldDirty: true,
+      },
+    );
+
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT use school.id here.
+     *
+     * Our schools.js contains a local catalog,
+     * not a backend UUID.
+     *
+     * institutionId will remain empty/null until
+     * the school is connected to a real Institution
+     * record in the backend.
+     */
+    setValue(
+      "institutionId",
+      "",
+      {
+        shouldDirty: true,
+      },
+    );
+
+    setSchoolSearch("");
+    setSchoolDropdownOpen(false);
+  };
+
+  /*
+   * =========================================================
+   * SUBMIT
+   * =========================================================
+   */
 
   async function onSubmit(values) {
     const payload = {
       studentName: values.studentName,
+
       dateOfBirth: values.dateOfBirth,
+
       gender: values.gender,
-      mobile: values.mobile || undefined,
-      email: values.email || undefined,
-      aadhaarNumber: values.aadhaarNumber || undefined,
-      currentSchoolName: values.currentSchoolName,
-      institutionId: values.institutionId || null,
-      currentClass: values.currentClass,
-      academicYear: values.academicYear,
-      continuingSameSchool: values.continuingSameSchool,
-      previousSchoolName: values.continuingSameSchool
-        ? undefined
-        : values.previousSchoolName || undefined,
-      newSchoolName: values.continuingSameSchool
-        ? undefined
-        : values.newSchoolName || undefined,
-      expectedJoiningDate: values.continuingSameSchool
-        ? undefined
-        : values.expectedJoiningDate || undefined,
-      previousClass: values.previousClass || undefined,
-      previousAcademicYear: values.previousAcademicYear || undefined,
-      previousClassPercentage: values.previousClassPercentage
-        ? Number(values.previousClassPercentage)
-        : undefined,
+
+      mobile:
+        values.mobile || undefined,
+
+      email:
+        values.email || undefined,
+
+      aadhaarNumber:
+        values.aadhaarNumber || undefined,
+
+      currentSchoolName:
+        values.currentSchoolName,
+
+      /*
+       * Backend expects UUID.
+       *
+       * Until we have a real Institution UUID,
+       * send null instead of a local school ID.
+       */
+      institutionId:
+        values.institutionId || null,
+
+      currentClass:
+        values.currentClass,
+
+      academicYear:
+        values.academicYear,
+
+      continuingSameSchool:
+        values.continuingSameSchool,
+
+      previousSchoolName:
+        values.continuingSameSchool
+          ? undefined
+          : values.previousSchoolName ||
+            undefined,
+
+      newSchoolName:
+        values.continuingSameSchool
+          ? undefined
+          : values.newSchoolName ||
+            undefined,
+
+      expectedJoiningDate:
+        values.continuingSameSchool
+          ? undefined
+          : values.expectedJoiningDate ||
+            undefined,
+
+      previousClass:
+        values.previousClass || undefined,
+
+      previousAcademicYear:
+        values.previousAcademicYear ||
+        undefined,
+
+      previousClassPercentage:
+        values.previousClassPercentage
+          ? Number(
+              values.previousClassPercentage,
+            )
+          : undefined,
     };
 
     try {
@@ -243,19 +506,26 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
           data: payload,
         }).unwrap();
 
-        toast.success("Student details updated");
+        toast.success(
+          "Student details updated",
+        );
       } else {
         await createSchoolLoanDetails({
           loanApplicationId,
           data: payload,
         }).unwrap();
 
-        toast.success("Student details saved");
+        toast.success(
+          "Student details saved",
+        );
       }
 
       onNext();
     } catch (error) {
-      console.error("STEP 1 (student) SAVE ERROR:", error);
+      console.error(
+        "STEP 1 (student) SAVE ERROR:",
+        error,
+      );
 
       toast.error(
         error?.data?.message ||
@@ -264,6 +534,12 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
       );
     }
   }
+
+  /*
+   * =========================================================
+   * LOADING
+   * =========================================================
+   */
 
   if (isFetching) {
     return (
@@ -280,19 +556,40 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
     );
   }
 
-  if (isFetchError && fetchError?.status !== 404) {
+  /*
+   * =========================================================
+   * ERROR
+   * =========================================================
+   */
+
+  if (
+    isFetchError &&
+    fetchError?.status !== 404
+  ) {
     return (
       <LoanWizardShell
         step={1}
         totalSteps={7}
         title="Student Information"
-        description={fetchError?.data?.message || "Please try again."}
+        description={
+          fetchError?.data?.message ||
+          "Please try again."
+        }
       />
     );
   }
 
+  /*
+   * =========================================================
+   * UI
+   * =========================================================
+   */
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      noValidate
+    >
       <LoanWizardShell
         step={1}
         totalSteps={7}
@@ -300,7 +597,10 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
         description="Tell us about the student and their current school."
       >
         <div className="space-y-10">
-          {/* Personal Details */}
+          {/* =====================================================
+              PERSONAL DETAILS
+          ====================================================== */}
+
           <section>
             <div className="mb-5">
               <h3 className="text-base font-semibold tracking-tight text-foreground">
@@ -329,11 +629,28 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
                 {...register("dateOfBirth")}
               />
 
-              <FormField label="Gender" required error={errors.gender?.message}>
-                <select className={selectClassName} {...register("gender")}>
-                  <option value="MALE">Male</option>
-                  <option value="FEMALE">Female</option>
-                  <option value="OTHER">Other</option>
+              <FormField
+                label="Gender"
+                required
+                error={
+                  errors.gender?.message
+                }
+              >
+                <select
+                  className={selectClassName}
+                  {...register("gender")}
+                >
+                  <option value="MALE">
+                    Male
+                  </option>
+
+                  <option value="FEMALE">
+                    Female
+                  </option>
+
+                  <option value="OTHER">
+                    Other
+                  </option>
                 </select>
               </FormField>
 
@@ -365,11 +682,13 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
                 error={errors.aadhaarNumber}
                 {...register("aadhaarNumber")}
               />
-
             </div>
           </section>
 
-          {/* Current Education */}
+          {/* =====================================================
+              CURRENT EDUCATION
+          ====================================================== */}
+
           <section className="border-t pt-8">
             <div className="mb-5 flex items-start gap-3">
               <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -388,82 +707,258 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
             </div>
 
             <div className="grid gap-x-5 gap-y-5 md:grid-cols-2">
-              {/* School Search */}
+              {/* SCHOOL SELECTOR */}
               <div className="relative md:col-span-2">
-                <FormInput
-                  label="Current school name"
-                  required
-                  placeholder="Search school or enter school name"
-                  error={errors.currentSchoolName}
-                  {...register("currentSchoolName", {
-                    onChange: (event) => {
-                      setSchoolQuery(event.target.value);
-                      setValue("institutionId", "");
-                    },
-                  })}
-                />
+                <label
+                  htmlFor="current-school"
+                  className="text-label"
+                >
+                  Current school
+                  <span className="ml-1 text-destructive">
+                    *
+                  </span>
+                </label>
 
-                <Search className="pointer-events-none absolute right-3 top-[38px] size-4 text-muted-foreground" />
+                <div className="relative mt-2">
+                  <input
+                    id="current-school"
+                    type="text"
+                    value={
+                      schoolSearch ||
+                      selectedSchoolName ||
+                      ""
+                    }
+                    placeholder="Search and select your school"
+                    autoComplete="off"
+                    onFocus={() => {
+                      setSchoolDropdownOpen(
+                        true,
+                      );
 
-                {schoolSuggestions.length > 0 ? (
-                  <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-lg border bg-background shadow-lg">
-                    <div className="border-b bg-muted/30 px-3 py-2">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Select your school
-                      </p>
-                    </div>
+                      /*
+                       * When an existing school is
+                       * already selected, show it in the
+                       * search field without requiring
+                       * the user to type again.
+                       */
+                      if (
+                        selectedSchoolName &&
+                        !schoolSearch
+                      ) {
+                        setSchoolSearch(
+                          selectedSchoolName,
+                        );
+                      }
+                    }}
+                    onChange={(event) => {
+                      const value =
+                        event.target.value;
 
-                    <div className="max-h-64 overflow-y-auto p-1">
-                      {schoolSuggestions.map((school) => (
-                        <button
-                          type="button"
-                          key={school.id}
-                          className="group flex w-full items-start gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted"
-                          onClick={() => {
-                            setValue("currentSchoolName", school.name);
-                            setValue("institutionId", school.id);
-                            setSchoolQuery("");
-                          }}
-                        >
-                          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                            <GraduationCap className="size-4" />
-                          </div>
+                      setSchoolSearch(value);
 
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-foreground">
-                              {school.name}
+                      setSchoolDropdownOpen(
+                        true,
+                      );
+
+                      setValue(
+                        "currentSchoolName",
+                        value,
+                        {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                        },
+                      );
+
+                      /*
+                       * User changed the text after
+                       * selecting a school, so the old
+                       * institution reference is no
+                       * longer valid.
+                       */
+                      setValue(
+                        "institutionId",
+                        "",
+                        {
+                          shouldDirty: true,
+                        },
+                      );
+                    }}
+                    className="h-11 w-full rounded-md border border-default bg-background pl-3 pr-10 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+
+                  {schoolSearch && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSchoolSearch("");
+
+                        setValue(
+                          "currentSchoolName",
+                          "",
+                          {
+                            shouldValidate: true,
+                            shouldDirty: true,
+                          },
+                        );
+
+                        setValue(
+                          "institutionId",
+                          "",
+                          {
+                            shouldDirty: true,
+                          },
+                        );
+
+                        setSchoolDropdownOpen(
+                          true,
+                        );
+                      }}
+                      className="absolute right-9 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label="Clear school search"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  )}
+
+                  <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                </div>
+
+                {errors.currentSchoolName && (
+                  <p className="mt-1 text-sm text-destructive">
+                    {
+                      errors
+                        .currentSchoolName
+                        .message
+                    }
+                  </p>
+                )}
+
+                {/* SCHOOL DROPDOWN */}
+                {schoolDropdownOpen && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Close school list"
+                      className="fixed inset-0 z-30 cursor-default"
+                      onClick={() =>
+                        setSchoolDropdownOpen(
+                          false,
+                        )
+                      }
+                    />
+
+                    <div className="absolute left-0 right-0 top-[76px] z-40 overflow-hidden rounded-xl border bg-background shadow-xl">
+                      <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-3">
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">
+                            Yavatmal private schools
+                          </p>
+
+                          <p className="mt-0.5 text-[11px] text-muted-foreground">
+                            Select the student's school
+                          </p>
+                        </div>
+
+                        <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
+                          {schoolSuggestions.length}
+                        </span>
+                      </div>
+
+                      <div className="max-h-72 overflow-y-auto p-1">
+                        {schoolSuggestions.length >
+                        0 ? (
+                          schoolSuggestions.map(
+                            (school) => {
+                              const selected =
+                                selectedSchoolName ===
+                                school.name;
+
+                              return (
+                                <button
+                                  key={school.name}
+                                  type="button"
+                                  onClick={() =>
+                                    handleSchoolSelect(
+                                      school,
+                                    )
+                                  }
+                                  className={[
+                                    "flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition hover:bg-muted",
+                                    selected
+                                      ? "bg-primary/5"
+                                      : "",
+                                  ].join(" ")}
+                                >
+                                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                    <GraduationCap className="size-4" />
+                                  </span>
+
+                                  <span className="min-w-0 flex-1">
+                                    <span className="block text-sm font-semibold text-foreground">
+                                      {
+                                        school.name
+                                      }
+                                    </span>
+
+                                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                                      {
+                                        school.board
+                                      }
+                                      {" • "}
+                                      {school.city}
+                                    </span>
+                                  </span>
+
+                                  {selected && (
+                                    <Check className="size-4 shrink-0 text-primary" />
+                                  )}
+                                </button>
+                              );
+                            },
+                          )
+                        ) : (
+                          <div className="px-4 py-8 text-center">
+                            <GraduationCap className="mx-auto size-6 text-muted-foreground" />
+
+                            <p className="mt-2 text-sm font-semibold">
+                              No school found
                             </p>
 
-                            <p className="mt-0.5 text-xs text-muted-foreground">
-                              {school.city}, {school.state}
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Try a different school
+                              name.
                             </p>
                           </div>
-
-                          {selectedSchool === school.id ? (
-                            <Check className="mt-1 size-4 shrink-0 text-primary" />
-                          ) : null}
-                        </button>
-                      ))}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ) : null}
+                  </>
+                )}
               </div>
-
 
               <FormField
                 label="Current class"
                 required
-                error={errors.currentClass?.message}
+                error={
+                  errors.currentClass?.message
+                }
               >
                 <select
                   className={selectClassName}
-                  {...register("currentClass")}
+                  {...register(
+                    "currentClass",
+                  )}
                 >
-                  {SCHOOL_CLASSES.map((value) => (
-                    <option key={value} value={value}>
-                      {classLabel(value)}
-                    </option>
-                  ))}
+                  {SCHOOL_CLASSES.map(
+                    (value) => (
+                      <option
+                        key={value}
+                        value={value}
+                      >
+                        {classLabel(value)}
+                      </option>
+                    ),
+                  )}
                 </select>
               </FormField>
 
@@ -472,31 +967,37 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
                 required
                 placeholder="e.g. 2026-2027"
                 error={errors.academicYear}
-                {...register("academicYear")}
+                {...register(
+                  "academicYear",
+                )}
               />
 
-              {/* Same School Toggle */}
+              {/* SAME SCHOOL */}
               <label className="group flex cursor-pointer items-start gap-3 rounded-lg border bg-muted/20 p-4 transition-colors hover:bg-muted/40 md:col-span-2">
                 <input
                   type="checkbox"
                   className="mt-0.5 size-4 shrink-0 accent-primary"
-                  {...register("continuingSameSchool")}
+                  {...register(
+                    "continuingSameSchool",
+                  )}
                 />
 
                 <div>
                   <p className="text-sm font-medium text-foreground">
-                    Student is continuing in the same school
+                    Student is continuing in the
+                    same school
                   </p>
 
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Uncheck this if the student is joining a new school.
+                    Uncheck this if the student is
+                    joining a new school.
                   </p>
                 </div>
               </label>
             </div>
 
-            {/* New School */}
-            {!continuingSameSchool ? (
+            {/* SCHOOL CHANGE */}
+            {!continuingSameSchool && (
               <div className="mt-6 rounded-lg border bg-muted/20 p-5">
                 <div className="mb-4">
                   <h4 className="text-sm font-semibold text-foreground">
@@ -504,7 +1005,8 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
                   </h4>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Provide the details of the student's upcoming school change.
+                    Provide the details of the upcoming
+                    school change.
                   </p>
                 </div>
 
@@ -512,30 +1014,45 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
                   <FormInput
                     label="Previous school name"
                     helperText="Optional"
-                    error={errors.previousSchoolName}
-                    {...register("previousSchoolName")}
+                    error={
+                      errors.previousSchoolName
+                    }
+                    {...register(
+                      "previousSchoolName",
+                    )}
                   />
 
                   <FormInput
                     label="New school name"
                     required
-                    error={errors.newSchoolName}
-                    {...register("newSchoolName")}
+                    error={
+                      errors.newSchoolName
+                    }
+                    {...register(
+                      "newSchoolName",
+                    )}
                   />
 
                   <FormInput
                     label="Expected joining date"
                     type="date"
                     required
-                    error={errors.expectedJoiningDate}
-                    {...register("expectedJoiningDate")}
+                    error={
+                      errors.expectedJoiningDate
+                    }
+                    {...register(
+                      "expectedJoiningDate",
+                    )}
                   />
                 </div>
               </div>
-            ) : null}
+            )}
           </section>
 
-          {/* Academic History */}
+          {/* =====================================================
+              ACADEMIC HISTORY
+          ====================================================== */}
+
           <section className="border-t pt-8">
             <div className="mb-5">
               <h3 className="text-base font-semibold tracking-tight text-foreground">
@@ -547,34 +1064,50 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
               </p>
 
               <p className="mt-2 text-xs text-muted-foreground">
-                Optional — leave blank for a first-time Class 1 entrant.
+                Optional — leave blank for a
+                first-time Class 1 entrant.
               </p>
             </div>
 
             <div className="grid gap-x-5 gap-y-5 md:grid-cols-3">
               <FormField
                 label="Previous class"
-                error={errors.previousClass?.message}
+                error={
+                  errors.previousClass?.message
+                }
               >
                 <select
                   className={selectClassName}
-                  {...register("previousClass")}
+                  {...register(
+                    "previousClass",
+                  )}
                 >
-                  <option value="">Not applicable</option>
+                  <option value="">
+                    Not applicable
+                  </option>
 
-                  {SCHOOL_CLASSES.map((value) => (
-                    <option key={value} value={value}>
-                      {classLabel(value)}
-                    </option>
-                  ))}
+                  {SCHOOL_CLASSES.map(
+                    (value) => (
+                      <option
+                        key={value}
+                        value={value}
+                      >
+                        {classLabel(value)}
+                      </option>
+                    ),
+                  )}
                 </select>
               </FormField>
 
               <FormInput
                 label="Previous academic year"
                 placeholder="e.g. 2025-2026"
-                error={errors.previousAcademicYear}
-                {...register("previousAcademicYear")}
+                error={
+                  errors.previousAcademicYear
+                }
+                {...register(
+                  "previousAcademicYear",
+                )}
               />
 
               <FormInput
@@ -582,14 +1115,21 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
                 inputMode="decimal"
                 helperText="0-100"
                 placeholder="e.g. 82.5"
-                error={errors.previousClassPercentage}
-                {...register("previousClassPercentage")}
+                error={
+                  errors.previousClassPercentage
+                }
+                {...register(
+                  "previousClassPercentage",
+                )}
               />
             </div>
           </section>
         </div>
 
-        <LoanWizardActions onBack={onBack} backDisabled={isSaving}>
+        <LoanWizardActions
+          onBack={onBack}
+          backDisabled={isSaving}
+        >
           <Button
             type="submit"
             size="lg"
@@ -597,7 +1137,9 @@ function StudentInformationStep({ loanApplicationId, onBack, onNext }) {
             loading={isSaving}
             className="w-full min-w-36 sm:w-auto"
           >
-            {isSaving ? "Saving..." : "Continue →"}
+            {isSaving
+              ? "Saving..."
+              : "Continue →"}
           </Button>
         </LoanWizardActions>
       </LoanWizardShell>
