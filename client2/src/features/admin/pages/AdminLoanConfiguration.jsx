@@ -3,7 +3,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "react-hot-toast";
-import { History, Info, Loader2, Plus, ShieldCheck } from "lucide-react";
+import {
+  CalendarDays,
+  History,
+  Info,
+  Loader2,
+  Plus,
+  ShieldCheck,
+} from "lucide-react";
 
 import {
   useCreateLoanConfigurationVersionMutation,
@@ -36,12 +43,16 @@ const currency = new Intl.NumberFormat("en-IN", {
 });
 
 function formatAmount(value) {
-  if (value === null || value === undefined || value === "") return "—";
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+
   return currency.format(Number(value));
 }
 
 function formatDate(value) {
   if (!value) return "—";
+
   return new Date(value).toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -53,15 +64,71 @@ function formatFee(version) {
   if (version.processingFeeType === "PERCENTAGE") {
     return `${Number(version.processingFee)}%`;
   }
+
   return formatAmount(version.processingFee);
 }
 
 function toDateInputValue(date) {
   const value = date instanceof Date ? date : new Date(date);
+
   const offset = value.getTimezoneOffset();
+
   return new Date(value.getTime() - offset * 60 * 1000)
     .toISOString()
     .slice(0, 10);
+}
+
+/*
+ * Returns the next valid effective date.
+ *
+ * If there are no versions:
+ *   tomorrow
+ *
+ * If versions exist:
+ *   one day after the latest version
+ *
+ * This is only the default date.
+ * Backend validation remains the final authority.
+ */
+function getNextEffectiveDate(versions) {
+  const tomorrow = new Date();
+
+  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  if (!versions?.length) {
+    return tomorrow;
+  }
+
+  const latestEffectiveFrom = versions.reduce(
+    (latest, version) => {
+      if (!version.effectiveFrom) {
+        return latest;
+      }
+
+      const date = new Date(version.effectiveFrom);
+
+      if (Number.isNaN(date.getTime())) {
+        return latest;
+      }
+
+      return date > latest ? date : latest;
+    },
+    new Date(0),
+  );
+
+  if (latestEffectiveFrom.getTime() === 0) {
+    return tomorrow;
+  }
+
+  latestEffectiveFrom.setHours(0, 0, 0, 0);
+  latestEffectiveFrom.setDate(
+    latestEffectiveFrom.getDate() + 1,
+  );
+
+  return latestEffectiveFrom > tomorrow
+    ? latestEffectiveFrom
+    : tomorrow;
 }
 
 /* =========================================================
@@ -73,7 +140,10 @@ const numeric = (message) =>
     .string()
     .trim()
     .min(1, message)
-    .refine((value) => !Number.isNaN(Number(value)), message);
+    .refine(
+      (value) => !Number.isNaN(Number(value)),
+      message,
+    );
 
 const versionSchema = z
   .object({
@@ -83,11 +153,17 @@ const versionSchema = z
     maxTenure: numeric("Maximum tenure is required"),
     interestRate: numeric("Interest rate is required"),
     processingFee: numeric("Processing fee is required"),
-    processingFeeType: z.enum(["PERCENTAGE", "FIXED"]),
+    processingFeeType: z.enum([
+      "PERCENTAGE",
+      "FIXED",
+    ]),
     gstPercentage: numeric("GST is required"),
     latePenalty: z.string().trim().optional(),
     foreclosureCharge: z.string().trim().optional(),
-    effectiveFrom: z.string().trim().min(1, "Effective from is required"),
+    effectiveFrom: z
+      .string()
+      .trim()
+      .min(1, "Effective from is required"),
   })
   .superRefine((values, ctx) => {
     const numbers = {
@@ -122,7 +198,8 @@ const versionSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["maxAmount"],
-        message: "Maximum amount must be at least the minimum amount",
+        message:
+          "Maximum amount must be at least the minimum amount",
       });
     }
 
@@ -130,7 +207,8 @@ const versionSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["minTenure"],
-        message: "Minimum tenure must be at least 1 month",
+        message:
+          "Minimum tenure must be at least 1 month",
       });
     }
 
@@ -138,7 +216,8 @@ const versionSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["maxTenure"],
-        message: "Maximum tenure must be at least the minimum tenure",
+        message:
+          "Maximum tenure must be at least the minimum tenure",
       });
     }
 
@@ -146,7 +225,8 @@ const versionSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["interestRate"],
-        message: "Interest rate cannot exceed 100%",
+        message:
+          "Interest rate cannot exceed 100%",
       });
     }
 
@@ -154,7 +234,8 @@ const versionSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["gstPercentage"],
-        message: "GST cannot exceed 100%",
+        message:
+          "GST cannot exceed 100%",
       });
     }
 
@@ -165,7 +246,8 @@ const versionSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["processingFee"],
-        message: "A percentage processing fee cannot exceed 100%",
+        message:
+          "A percentage processing fee cannot exceed 100%",
       });
     }
   });
@@ -175,21 +257,61 @@ const versionSchema = z
 ========================================================= */
 
 function AdminLoanConfiguration() {
-  const { data, isLoading, isError, refetch } =
-    useGetLoanConfigurationOverviewQuery();
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useGetLoanConfigurationOverviewQuery();
 
-  const [createVersion, { isLoading: isSaving }] =
-    useCreateLoanConfigurationVersionMutation();
+  const [
+    createVersion,
+    { isLoading: isSaving },
+  ] = useCreateLoanConfigurationVersionMutation();
 
   const [isFormOpen, setFormOpen] = useState(false);
 
   const loanType = data?.data?.loanType || null;
-  const versions = useMemo(() => data?.data?.versions || [], [data]);
 
+  const versions = useMemo(
+    () => data?.data?.versions || [],
+    [data],
+  );
+
+  /*
+   * IMPORTANT:
+   * Active configuration is determined from isApplicable.
+   *
+   * This is what we use to prefill the new version.
+   * Historical versions are NEVER used for prefilling.
+   */
   const activeVersion = useMemo(
-    () => versions.find((version) => version.isApplicable) || null,
+    () =>
+      versions.find(
+        (version) => version.isApplicable,
+      ) || null,
     [versions],
   );
+
+  const latestVersion = useMemo(() => {
+    if (!versions.length) return null;
+
+    return versions.reduce((latest, version) => {
+      if (!latest) return version;
+
+      const latestDate = new Date(
+        latest.effectiveFrom,
+      ).getTime();
+
+      const versionDate = new Date(
+        version.effectiveFrom,
+      ).getTime();
+
+      return versionDate > latestDate
+        ? version
+        : latest;
+    }, null);
+  }, [versions]);
 
   const {
     register,
@@ -198,6 +320,7 @@ function AdminLoanConfiguration() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(versionSchema),
+
     defaultValues: {
       minAmount: "",
       maxAmount: "",
@@ -213,34 +336,68 @@ function AdminLoanConfiguration() {
     },
   });
 
-  function openForm() {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  /* =========================================================
+     CREATE VERSION
+  ========================================================= */
 
+  function openForm() {
+    const nextEffectiveDate =
+      getNextEffectiveDate(versions);
+
+    /*
+     * NEW VERSION IS COPIED FROM ACTIVE CONFIGURATION.
+     *
+     * It does NOT copy from latest historical version.
+     */
     reset({
-      minAmount: activeVersion ? String(Number(activeVersion.minAmount)) : "",
-      maxAmount: activeVersion ? String(Number(activeVersion.maxAmount)) : "",
-      minTenure: activeVersion ? String(activeVersion.minTenure) : "",
-      maxTenure: activeVersion ? String(activeVersion.maxTenure) : "",
+      minAmount: activeVersion
+        ? String(Number(activeVersion.minAmount))
+        : "",
+
+      maxAmount: activeVersion
+        ? String(Number(activeVersion.maxAmount))
+        : "",
+
+      minTenure: activeVersion
+        ? String(activeVersion.minTenure)
+        : "",
+
+      maxTenure: activeVersion
+        ? String(activeVersion.maxTenure)
+        : "",
+
       interestRate: activeVersion
         ? String(Number(activeVersion.interestRate))
         : "",
+
       processingFee: activeVersion
         ? String(Number(activeVersion.processingFee))
         : "",
-      processingFeeType: activeVersion?.processingFeeType || "PERCENTAGE",
+
+      processingFeeType:
+        activeVersion?.processingFeeType ||
+        "PERCENTAGE",
+
       gstPercentage: activeVersion
         ? String(Number(activeVersion.gstPercentage))
         : "",
+
       latePenalty:
         activeVersion?.latePenalty != null
           ? String(Number(activeVersion.latePenalty))
           : "",
+
       foreclosureCharge:
         activeVersion?.foreclosureCharge != null
-          ? String(Number(activeVersion.foreclosureCharge))
+          ? String(
+              Number(
+                activeVersion.foreclosureCharge,
+              ),
+            )
           : "",
-      effectiveFrom: toDateInputValue(tomorrow),
+
+      effectiveFrom:
+        toDateInputValue(nextEffectiveDate),
     });
 
     setFormOpen(true);
@@ -248,29 +405,57 @@ function AdminLoanConfiguration() {
 
   async function onSubmit(values) {
     if (!loanType?.id) {
-      toast.error("Loan product could not be resolved.");
+      toast.error(
+        "Loan product could not be resolved.",
+      );
       return;
     }
 
     try {
       await createVersion({
         loanTypeId: loanType.id,
+
         minAmount: Number(values.minAmount),
         maxAmount: Number(values.maxAmount),
+
         minTenure: Number(values.minTenure),
         maxTenure: Number(values.maxTenure),
-        interestRate: Number(values.interestRate),
-        processingFee: Number(values.processingFee),
-        processingFeeType: values.processingFeeType,
-        gstPercentage: Number(values.gstPercentage),
-        latePenalty: values.latePenalty ? Number(values.latePenalty) : undefined,
-        foreclosureCharge: values.foreclosureCharge
-          ? Number(values.foreclosureCharge)
+
+        interestRate: Number(
+          values.interestRate,
+        ),
+
+        processingFee: Number(
+          values.processingFee,
+        ),
+
+        processingFeeType:
+          values.processingFeeType,
+
+        gstPercentage: Number(
+          values.gstPercentage,
+        ),
+
+        latePenalty: values.latePenalty
+          ? Number(values.latePenalty)
           : undefined,
-        effectiveFrom: new Date(values.effectiveFrom).toISOString(),
+
+        foreclosureCharge:
+          values.foreclosureCharge
+            ? Number(
+                values.foreclosureCharge,
+              )
+            : undefined,
+
+        effectiveFrom: new Date(
+          values.effectiveFrom,
+        ).toISOString(),
       }).unwrap();
 
-      toast.success("New configuration version created.");
+      toast.success(
+        "New configuration version created.",
+      );
+
       setFormOpen(false);
     } catch (error) {
       toast.error(
@@ -281,17 +466,25 @@ function AdminLoanConfiguration() {
     }
   }
 
-  /* ===================== LOADING / ERROR ===================== */
+  /* =========================================================
+     LOADING
+  ========================================================= */
 
   if (isLoading) {
     return (
       <div className="space-y-6 pt-6">
         <Skeleton className="h-9 w-72" />
-        <Skeleton className="h-48 w-full rounded-lg" />
+
+        <Skeleton className="h-56 w-full rounded-xl" />
+
         <Skeleton className="h-64 w-full rounded-lg" />
       </div>
     );
   }
+
+  /* =========================================================
+     ERROR
+  ========================================================= */
 
   if (isError) {
     return (
@@ -315,11 +508,15 @@ function AdminLoanConfiguration() {
     );
   }
 
-  /* ========================== RENDER ========================= */
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <div className="space-y-8 pt-6 pb-20 lg:pb-8">
-      {/* HEADER */}
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <div className="flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -328,112 +525,279 @@ function AdminLoanConfiguration() {
           </h1>
 
           <p className="mt-1 text-sm text-muted-foreground">
-            {loanType?.name || "School Student Loan"} — pricing and limits used
-            to assess new applications.
+            {loanType?.name ||
+              "School Student Loan"}{" "}
+            — pricing and limits used to assess new
+            applications.
           </p>
         </div>
-
-        <Button type="button" onClick={openForm} disabled={isFormOpen}>
-          <Plus />
-          Create New Version
-        </Button>
       </div>
 
-      {/* HOW VERSIONING BEHAVES */}
+      {/* =====================================================
+          ACTIVE CONFIGURATION CARD
+      ===================================================== */}
+
+      <section>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-primary" />
+
+            <h2 className="text-base font-semibold text-foreground">
+              Active configuration
+            </h2>
+          </div>
+
+          {activeVersion ? (
+            <Badge variant="success">
+              Active
+            </Badge>
+          ) : null}
+        </div>
+
+        {activeVersion ? (
+          <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+            {/* CARD HEADER */}
+
+            <div className="border-b bg-muted/20 px-5 py-5 sm:px-6">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {loanType?.name ||
+                        "School Student Loan"}
+                    </h3>
+
+                    <Badge variant="success">
+                      Active
+                    </Badge>
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                    <CalendarDays className="size-4" />
+
+                    <span>
+                      Effective from{" "}
+                      <span className="font-medium text-foreground">
+                        {formatDate(
+                          activeVersion.effectiveFrom,
+                        )}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  type="button"
+                  onClick={openForm}
+                  disabled={isFormOpen}
+                  className="w-full sm:w-auto"
+                >
+                  <Plus />
+                  Create New Version
+                </Button>
+              </div>
+            </div>
+
+            {/* HIGHLIGHTED PRICING */}
+
+            <div className="grid border-b sm:grid-cols-2 lg:grid-cols-4">
+              <div className="border-b px-5 py-5 sm:border-r lg:border-b-0">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Interest rate
+                </p>
+
+                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+                  {Number(
+                    activeVersion.interestRate,
+                  )}
+                  <span className="ml-1 text-sm font-medium text-muted-foreground">
+                    % p.a.
+                  </span>
+                </p>
+              </div>
+
+              <div className="border-b px-5 py-5 lg:border-b-0 lg:border-r">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Processing fee
+                </p>
+
+                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+                  {formatFee(activeVersion)}
+                </p>
+              </div>
+
+              <div className="border-b px-5 py-5 sm:border-r lg:border-b-0">
+                <p className="text-xs font-medium text-muted-foreground">
+                  GST
+                </p>
+
+                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+                  {Number(
+                    activeVersion.gstPercentage,
+                  )}
+                  <span className="ml-1 text-sm font-medium text-muted-foreground">
+                    %
+                  </span>
+                </p>
+              </div>
+
+              <div className="px-5 py-5">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Late payment penalty
+                </p>
+
+                <p className="mt-1 text-2xl font-bold tracking-tight text-foreground">
+                  {activeVersion.latePenalty != null
+                    ? formatAmount(
+                        activeVersion.latePenalty,
+                      )
+                    : "—"}
+                </p>
+              </div>
+            </div>
+
+            {/* LIMITS */}
+
+            <div className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-4">
+              <div className="bg-card px-5 py-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Loan amount
+                </p>
+
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {formatAmount(
+                    activeVersion.minAmount,
+                  )}{" "}
+                  –{" "}
+                  {formatAmount(
+                    activeVersion.maxAmount,
+                  )}
+                </p>
+              </div>
+
+              <div className="bg-card px-5 py-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Tenure
+                </p>
+
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {activeVersion.minTenure} –{" "}
+                  {activeVersion.maxTenure} months
+                </p>
+              </div>
+
+              <div className="bg-card px-5 py-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Foreclosure charge
+                </p>
+
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  {activeVersion.foreclosureCharge !=
+                  null
+                    ? formatAmount(
+                        activeVersion.foreclosureCharge,
+                      )
+                    : "—"}
+                </p>
+              </div>
+
+              <div className="bg-card px-5 py-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Version
+                </p>
+
+                <p className="mt-1 text-sm font-semibold text-foreground">
+                  v{activeVersion.version}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed py-12 text-center">
+            <ShieldCheck className="mx-auto size-8 text-muted-foreground/50" />
+
+            <p className="mt-3 text-sm font-semibold text-foreground">
+              No active configuration
+            </p>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Create a version to start accepting
+              applications.
+            </p>
+
+            <Button
+              type="button"
+              onClick={openForm}
+              className="mt-5"
+            >
+              <Plus />
+              Create First Version
+            </Button>
+          </div>
+        )}
+      </section>
+
+      {/* =====================================================
+          VERSIONING INFORMATION
+      ===================================================== */}
 
       <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/[0.04] px-5 py-4">
         <Info className="mt-0.5 size-4 shrink-0 text-primary" />
 
         <p className="text-sm text-muted-foreground">
-          Changes apply to new loan applications from the effective date.
-          Existing submitted loans retain their captured terms — historical
+          Changes apply to new loan applications from
+          the effective date. Existing submitted loans
+          retain their captured terms — historical
           pricing is never rewritten.
         </p>
       </div>
 
-      {/* ACTIVE CONFIGURATION */}
-
-      <section>
-        <div className="mb-4 flex items-center gap-2">
-          <ShieldCheck className="size-4 text-primary" />
-
-          <h2 className="text-base font-semibold text-foreground">
-            Active configuration
-          </h2>
-        </div>
-
-        {activeVersion ? (
-          <div className="grid gap-px overflow-hidden rounded-lg border bg-border sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              ["Loan product", loanType?.name || "—"],
-              ["Minimum loan amount", formatAmount(activeVersion.minAmount)],
-              ["Maximum loan amount", formatAmount(activeVersion.maxAmount)],
-              ["Minimum tenure", `${activeVersion.minTenure} months`],
-              ["Maximum tenure", `${activeVersion.maxTenure} months`],
-              ["Interest rate", `${Number(activeVersion.interestRate)}% p.a.`],
-              ["Processing fee", formatFee(activeVersion)],
-              [
-                "Processing fee type",
-                activeVersion.processingFeeType === "PERCENTAGE"
-                  ? "Percentage"
-                  : "Fixed",
-              ],
-              ["GST", `${Number(activeVersion.gstPercentage)}%`],
-              [
-                "Late payment penalty",
-                activeVersion.latePenalty != null
-                  ? formatAmount(activeVersion.latePenalty)
-                  : "—",
-              ],
-              [
-                "Foreclosure charge",
-                activeVersion.foreclosureCharge != null
-                  ? formatAmount(activeVersion.foreclosureCharge)
-                  : "—",
-              ],
-              ["Effective from", formatDate(activeVersion.effectiveFrom)],
-            ].map(([label, value]) => (
-              <div key={label} className="bg-card px-5 py-4">
-                <p className="text-xs font-medium text-muted-foreground">
-                  {label}
-                </p>
-
-                <p className="mt-1 text-sm font-semibold text-foreground">
-                  {value}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-lg border border-dashed py-10 text-center">
-            <p className="text-sm font-semibold text-foreground">
-              No active configuration
-            </p>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              Create a version to start accepting applications.
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* NEW VERSION FORM */}
+      {/* =====================================================
+          NEW VERSION FORM
+      ===================================================== */}
 
       {isFormOpen ? (
-        <section className="rounded-lg border">
-          <div className="border-b px-5 py-4">
-            <h2 className="text-base font-semibold text-foreground">
-              Create new version
-            </h2>
+        <section className="overflow-hidden rounded-xl border bg-card">
+          <div className="border-b px-5 py-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">
+                  Create new version
+                </h2>
 
-            <p className="mt-1 text-sm text-muted-foreground">
-              The current version is closed the moment this one takes effect.
-              Applications already submitted keep the terms captured at
-              submission.
-            </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  The form starts with the current active
+                  configuration. Change only the values
+                  that need to be updated.
+                </p>
+              </div>
+
+              {activeVersion ? (
+                <Badge variant="neutral">
+                  Copying v{activeVersion.version}
+                </Badge>
+              ) : null}
+            </div>
+
+            {latestVersion ? (
+              <p className="mt-4 rounded-md bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                The new version must start after{" "}
+                <span className="font-medium text-foreground">
+                  {formatDate(
+                    latestVersion.effectiveFrom,
+                  )}
+                </span>
+                . The previous version will be closed
+                when this one takes effect.
+              </p>
+            ) : null}
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} noValidate className="p-5">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+            className="p-5"
+          >
             <div className="grid gap-x-5 gap-y-5 md:grid-cols-2 lg:grid-cols-3">
               <FormInput
                 label="Minimum loan amount (₹)"
@@ -478,14 +842,21 @@ function AdminLoanConfiguration() {
               <FormField
                 label="Processing fee type"
                 required
-                error={errors.processingFeeType?.message}
+                error={
+                  errors.processingFeeType?.message
+                }
               >
                 <select
                   className={selectClassName}
                   {...register("processingFeeType")}
                 >
-                  <option value="PERCENTAGE">Percentage</option>
-                  <option value="FIXED">Fixed</option>
+                  <option value="PERCENTAGE">
+                    Percentage
+                  </option>
+
+                  <option value="FIXED">
+                    Fixed
+                  </option>
                 </select>
               </FormField>
 
@@ -519,7 +890,9 @@ function AdminLoanConfiguration() {
                 helperText="Optional"
                 inputMode="decimal"
                 error={errors.foreclosureCharge}
-                {...register("foreclosureCharge")}
+                {...register(
+                  "foreclosureCharge",
+                )}
               />
 
               <FormInput
@@ -541,8 +914,14 @@ function AdminLoanConfiguration() {
                 Cancel
               </Button>
 
-              <Button type="submit" disabled={isSaving}>
-                {isSaving ? <Loader2 className="animate-spin" /> : null}
+              <Button
+                type="submit"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+
                 Create version
               </Button>
             </div>
@@ -550,7 +929,9 @@ function AdminLoanConfiguration() {
         </section>
       ) : null}
 
-      {/* VERSION HISTORY */}
+      {/* =====================================================
+          VERSION HISTORY
+      ===================================================== */}
 
       <section>
         <div className="mb-4 flex items-center gap-2">
@@ -560,7 +941,9 @@ function AdminLoanConfiguration() {
             Version history
           </h2>
 
-          <span className="text-xs text-muted-foreground">(read-only)</span>
+          <span className="text-xs text-muted-foreground">
+            (read-only)
+          </span>
         </div>
 
         <div className="overflow-x-auto rounded-lg border">
@@ -572,8 +955,12 @@ function AdminLoanConfiguration() {
                 <TableHead>Effective to</TableHead>
                 <TableHead>Interest rate</TableHead>
                 <TableHead>Processing fee</TableHead>
-                <TableHead>Loan amount range</TableHead>
-                <TableHead>Tenure range</TableHead>
+                <TableHead>
+                  Loan amount range
+                </TableHead>
+                <TableHead>
+                  Tenure range
+                </TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -595,32 +982,55 @@ function AdminLoanConfiguration() {
                       v{version.version}
                     </TableCell>
 
-                    <TableCell>{formatDate(version.effectiveFrom)}</TableCell>
+                    <TableCell>
+                      {formatDate(
+                        version.effectiveFrom,
+                      )}
+                    </TableCell>
 
                     <TableCell>
                       {version.effectiveTo
-                        ? formatDate(version.effectiveTo)
+                        ? formatDate(
+                            version.effectiveTo,
+                          )
                         : "—"}
                     </TableCell>
 
-                    <TableCell>{Number(version.interestRate)}%</TableCell>
+                    <TableCell>
+                      {Number(
+                        version.interestRate,
+                      )}
+                      %
+                    </TableCell>
 
-                    <TableCell>{formatFee(version)}</TableCell>
-
-                    <TableCell className="whitespace-nowrap">
-                      {formatAmount(version.minAmount)} –{" "}
-                      {formatAmount(version.maxAmount)}
+                    <TableCell>
+                      {formatFee(version)}
                     </TableCell>
 
                     <TableCell className="whitespace-nowrap">
-                      {version.minTenure}–{version.maxTenure} months
+                      {formatAmount(
+                        version.minAmount,
+                      )}{" "}
+                      –{" "}
+                      {formatAmount(
+                        version.maxAmount,
+                      )}
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap">
+                      {version.minTenure}–
+                      {version.maxTenure} months
                     </TableCell>
 
                     <TableCell>
                       {version.isApplicable ? (
-                        <Badge variant="success">Active</Badge>
+                        <Badge variant="success">
+                          Active
+                        </Badge>
                       ) : (
-                        <Badge variant="neutral">Historical</Badge>
+                        <Badge variant="neutral">
+                          Historical
+                        </Badge>
                       )}
                     </TableCell>
                   </TableRow>

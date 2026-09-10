@@ -1059,7 +1059,7 @@ function AdminLoanDetails() {
           STICKY DECISION BAR
       ========================================================= */}
       {availableActions.length > 0 ? (
-        <div className="fixed inset-x-0 bottom-16 z-40 border-t border-border bg-background/95 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur lg:bottom-0">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur">
           <div className="mx-auto flex max-w-[1480px] flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
             <div className="hidden xl:block">
               <p className="text-sm font-bold">Application decision</p>

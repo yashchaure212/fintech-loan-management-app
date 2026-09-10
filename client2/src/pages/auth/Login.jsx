@@ -14,7 +14,7 @@ import FormInput from "@/components/shared/FormInput";
 import { Button } from "@/components/ui/button";
 
 import { loginSchema } from "../../features/auth/schemas/auth.schema";
-import { useLoginMutation } from "../authApi";
+import { useLoginMutation } from "@/features/auth/api/authApi";
 import { setCredentials } from "../../features/auth/authSlice";
 
 function isSafeInternalPath(path) {

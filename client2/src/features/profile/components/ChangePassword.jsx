@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import FormInput from "@/components/shared/FormInput";
 import { Button } from "@/components/ui/button";
 import { changePasswordSchema } from "@/features/auth/schemas/auth.schema";
-import { useChangePasswordMutation } from "@/features/auth/authApi";
+import { useChangePasswordMutation } from "@/features/auth/api/authApi";
 
 function ChangePassword() {
   const navigate = useNavigate();

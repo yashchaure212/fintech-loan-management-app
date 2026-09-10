@@ -37,13 +37,13 @@ function AdminMobileSidebar({ open, setOpen }) {
         className="w-[88%] max-w-sm border-r border-border bg-muted/30 p-0"
       >
         {/* Header */}
-        <SheetHeader className="border-b border-border bg-card px-4 py-4 text-left">
+        <SheetHeader className="border-b border-border bg-card px-4 py-4 text-left ">
           <SheetTitle className="flex items-center gap-2.5">
             <span className="flex size-9 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground shadow-sm">
               L
             </span>
 
-            <span className="text-base font-bold tracking-tight text-foreground">
+            <span className="text-base font-bold tracking-tight text-muted-foreground">
               LoanPro Admin
             </span>
           </SheetTitle>
@@ -56,7 +56,7 @@ function AdminMobileSidebar({ open, setOpen }) {
         {/* Navigation */}
         <div className="flex flex-1 flex-col overflow-y-auto px-4 py-4">
           <div className="mb-2">
-            <span className="section-eyebrow">
+            <span className="section-eyebrow ">
               Administration
             </span>
 

@@ -38,6 +38,7 @@ import AppExperience from "@/pages/public/AppExperience";
 import KYC from "@/pages/customer/KYC";
 import Notifications from "@/pages/customer/Notifications";
 import SchoolStudentLoan from "@/features/loan/pages/SchoolStudentLoan";
+import Assistant from "@/pages/public/Assistant";
 
 const Dashboard = lazy(() => import("@/features/dashboard/pages/Dashboard"));
 const ApplyLoan = lazy(() => import("@/features/loan/pages/ApplyLoan"));
@@ -82,6 +83,7 @@ function AppRoutes() {
               <Route path="/register" element={<Register />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/loan-terms" element={<LoanTerms />} />
+              <Route path="/assistant" element={<Assistant />} />
               <Route
                 path="/notification-preferences"
                 element={<NotificationPreferences />}

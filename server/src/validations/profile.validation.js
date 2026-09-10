@@ -9,6 +9,8 @@ export const createProfileSchema = z.object({
 
   gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
 
+  occupation: z.string().max(100).optional(),
+
   panNumber: z.string().length(10).optional(),
 
   aadhaarNumber: z.string().length(12).optional(),

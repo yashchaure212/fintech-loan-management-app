@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "react-hot-toast";
 import FormInput from "@/components/shared/FormInput";
 import { Button } from "@/components/ui/button";
-import { addressSchema } from "../schemas/profile.schema";
+import { createProfileSchema } from "../schemas/profile.schema";
 import {
   useGetAddressQuery,
   useCreateAddressMutation,
@@ -22,7 +22,7 @@ function AddressDetails() {
     reset,
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(addressSchema),
+    resolver: zodResolver(createProfileSchema),
 
     defaultValues: {
       type: "CURRENT",

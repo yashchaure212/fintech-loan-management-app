@@ -9,7 +9,7 @@ import FormInput from "@/components/shared/FormInput";
 import { Button } from "@/components/ui/button";
 
 import { registerSchema } from "../../features/auth/schemas/auth.schema";
-import { useRegisterMutation } from "../authApi";
+import { useRegisterMutation } from "@/features/auth/api/authApi";
 import { setCredentials } from "../../features/auth/authSlice";
 
 function homePathForRole(role) {

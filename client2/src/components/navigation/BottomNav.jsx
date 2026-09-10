@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
   Grid2x2,
@@ -39,6 +39,7 @@ const items = [
 
 function BottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isAuthenticated = useSelector(
     (state) => state.auth.isAuthenticated,
@@ -55,16 +56,22 @@ function BottomNav() {
     );
   };
 
+const handleNavigation = (destination) => {
+  navigate(destination);
+
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: "smooth",
+  });
+};
+
   return (
     <nav
       aria-label="Primary navigation"
       className="
-        fixed
-        inset-x-0
-        bottom-0
-        z-40
-        border-t
-        border-border
+        fixed inset-x-0 bottom-0 z-40
+        border-t border-border
         bg-card
         shadow-lg
         md:hidden
@@ -79,19 +86,21 @@ function BottomNav() {
             icon: Icon,
             emphasis,
           }) => {
-            const active = isActive(to);
-
             const destination =
               loginTo && !isAuthenticated
                 ? loginTo
                 : to;
 
+            const active = isActive(destination);
+
             return (
               <li key={label}>
-                <Link
-                  to={destination}
+                <button
+                  type="button"
+                  onClick={() => handleNavigation(destination)}
                   className={[
-                    "group flex h-14 flex-col items-center justify-center gap-1 transition-colors",
+                    "group flex h-14 w-full flex-col items-center justify-center gap-1",
+                    "transition-colors",
                     active
                       ? "text-primary"
                       : "text-muted-foreground hover:text-primary",
@@ -115,7 +124,7 @@ function BottomNav() {
                   <span className="text-[11px] font-medium leading-none">
                     {label}
                   </span>
-                </Link>
+                </button>
               </li>
             );
           },

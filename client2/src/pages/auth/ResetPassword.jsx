@@ -6,7 +6,7 @@ import { ArrowRight, ShieldCheck } from "lucide-react";
 
 import FormInput from "@/components/shared/FormInput";
 import { resetPasswordSchema } from "../../features/auth/schemas/auth.schema";
-import { useResetPasswordMutation } from "../authApi";
+import { useResetPasswordMutation } from "@/features/auth/api/authApi";
 import { Button } from "@/components/ui/button";
 
 function ResetPassword() {

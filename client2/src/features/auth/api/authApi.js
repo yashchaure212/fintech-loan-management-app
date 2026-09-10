@@ -1,5 +1,5 @@
 import { baseApi } from "@/app/api/baseApi";
-import { logout, setInitialized } from "./authSlice";
+import { logout, setInitialized } from "../authSlice";
 
 function clearClientAuth(dispatch) {
   dispatch(logout());

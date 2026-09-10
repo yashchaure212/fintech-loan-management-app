@@ -5,7 +5,14 @@ export const adminLoanController = {
     try {
       const page = Math.max(1, Number(req.query.page) || 1);
       const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
-      const result = await adminLoanService.getApplications({ page, limit });
+      const { status, search } = req.query;
+
+      const result = await adminLoanService.getApplications({
+        page,
+        limit,
+        status,
+        search,
+      });
 
       res.json({
         success: true,

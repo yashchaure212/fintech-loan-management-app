@@ -25,11 +25,12 @@ import {
   Eye,
   Smartphone,
   ReceiptText,
+  Home,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 import ThemeToggle from "@/features/theme/ThemeToggle";
-import { useLogoutMutation } from "@/features/auth/authApi";
+import { useLogoutMutation } from "@/features/auth/api/authApi";
 
 /* ================================================================
    HELPERS
@@ -53,7 +54,7 @@ function MenuItem({ icon: Icon, label, description, to, danger = false }) {
   return (
     <Link
       to={to}
-      className="group flex min-h-[64px] items-center gap-3 border-b border-border px-3 py-3 transition-colors last:border-b-0 hover:bg-muted/50 sm:px-4"
+      className="group flex min-h-[64px] items-center text-white gap-3 border-b border-border px-3 py-3 transition-colors last:border-b-0 hover:bg-muted/50 sm:px-4"
     >
       <span
         className={`
@@ -125,14 +126,14 @@ function QuickAction({ icon: Icon, label, to }) {
   return (
     <Link
       to={to}
-      className="group flex items-center gap-2 rounded-lg border border-primary/10 bg-primary/[0.04] px-3 py-3 transition hover:border-primary/20 hover:bg-primary/[0.07]"
+      className="group flex items-center gap-2 rounded-lg border border-primary/10 bg-primary/[0.04] px-3 py-3 transition hover:border-primary/20 hover:bg-primary/[0.07] text-white"
     >
-      <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+      <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary/10 text-white">
         <Icon className="size-4" strokeWidth={1.8} />
       </span>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[11px] font-bold text-foreground">
+        <span className="block truncate text-[11px] font-bold text-white">
           {label}
         </span>
       </span>
@@ -276,54 +277,84 @@ function Menu() {
 
         {isCustomer && (
           <>
-            <section className="mt-5 overflow-hidden rounded-2xl bg-primary p-4 text-primary-foreground shadow-sm sm:p-5">
-              <div className="flex items-center gap-3">
-                <span className="grid size-12 shrink-0 place-items-center rounded-full bg-primary-foreground text-sm font-bold text-primary">
-                  {(
-                    user?.firstName?.[0] ||
-                    user?.name?.[0] ||
-                    "U"
-                  ).toUpperCase()}
-                </span>
+            <section className="mt-5 overflow-hidden rounded-2xl bg-primary px-4 pb-4 pt-3 text-primary-foreground shadow-sm md:px-5">
+  {/* Customer Header */}
+  <div className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3">
+    <span className="grid size-11 place-items-center rounded-full bg-primary-foreground text-base font-bold text-primary">
+      {(
+        user?.firstName?.[0] ||
+        user?.name?.[0] ||
+        "U"
+      ).toUpperCase()}
+    </span>
 
-                <div className="min-w-0">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-primary-foreground/60">
-                    Welcome back
-                  </p>
+    <div className="min-w-0">
+      <h2 className="truncate text-base font-bold text-primary-foreground">
+        {user?.firstName || user?.name || "LoanPro Customer"}
+      </h2>
 
-                  <h2 className="truncate text-base font-bold">
-                    {user?.firstName || user?.name || "LoanPro Customer"}
-                  </h2>
+      <p className="num truncate text-[10px] text-primary-foreground/70">
+        Customer ID {user?.customerId || "88214470"}
+        {user?.phone && ` · ${user.phone}`}
+      </p>
+    </div>
 
-                  {user?.email && (
-                    <p className="truncate text-[10px] text-primary-foreground/70">
-                      {user.email}
-                    </p>
-                  )}
-                </div>
+    <Link
+      to="/customer/profile"
+      className="rounded-md bg-primary-foreground/10 px-3 py-2 text-[10px] font-bold text-primary-foreground transition hover:bg-primary-foreground/20"
+    >
+      Profile
+    </Link>
+  </div>
 
-                <Link
-                  to="/customer/profile"
-                  className="ml-auto rounded-md bg-primary-foreground/10 px-3 py-2 text-[10px] font-bold"
-                >
-                  Profile
-                </Link>
-              </div>
+  {/* Account Summary */}
+  <dl className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-card p-2.5 text-center shadow-raised">
+    <div>
+      <dt className="text-[9px] uppercase tracking-wide text-muted-foreground">
+        Outstanding
+      </dt>
 
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <QuickAction
-                  icon={FileText}
-                  label="My Loans"
-                  to="/customer/loans"
-                />
+      <dd className="num mt-0.5 text-[13px] font-bold text-foreground">
+        ₹0
+      </dd>
+    </div>
 
-                <QuickAction
-                  icon={CreditCard}
-                  label="Pay EMI"
-                  to="/customer/payments"
-                />
-              </div>
-            </section>
+    <div>
+      <dt className="text-[9px] uppercase tracking-wide text-muted-foreground">
+        Accounts
+      </dt>
+
+      <dd className="num mt-0.5 text-[13px] font-bold text-foreground">
+        0
+      </dd>
+    </div>
+
+    <div>
+      <dt className="text-[9px] uppercase tracking-wide text-muted-foreground">
+        On-time
+      </dt>
+
+      <dd className="num mt-0.5 text-[13px] font-bold text-success">
+        100%
+      </dd>
+    </div>
+  </dl>
+
+  {/* Quick Actions */}
+  <div className="mt-3 grid grid-cols-2 gap-2">
+    <QuickAction
+      icon={FileText}
+      label="My Loans"
+      to="/customer/loans"
+    />
+
+    <QuickAction
+      icon={CreditCard}
+      label="Pay EMI"
+      to="/customer/payments"
+    />
+  </div>
+</section>
 
             {/* Account */}
             <div className="mt-5 space-y-5">

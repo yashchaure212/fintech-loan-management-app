@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import { baseApi } from "@/app/api/baseApi";
-import { authApi, useGetMeQuery } from "@/features/auth/authApi";
+import { authApi, useGetMeQuery } from "@/features/auth/api/authApi";
 
 import {
   setUser,

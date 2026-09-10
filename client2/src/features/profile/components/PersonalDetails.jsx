@@ -6,7 +6,7 @@ import { toast } from "react-hot-toast";
 import FormInput from "@/components/shared/FormInput";
 import { Button } from "@/components/ui/button";
 
-import { personalDetailsSchema } from "../schemas/profile.schema";
+import { createProfileSchema } from "../schemas/profile.schema";
 
 import {
   useGetProfileQuery,
@@ -25,7 +25,7 @@ function PersonalDetails() {
     reset,
     formState: { errors },
   } = useForm({
-    resolver: zodResolver(personalDetailsSchema),
+    resolver: zodResolver(createProfileSchema),
 
     defaultValues: {
       firstName: "",

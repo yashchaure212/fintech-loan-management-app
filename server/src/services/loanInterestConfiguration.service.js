@@ -5,25 +5,6 @@ import {
 } from "../constants/loanProducts.js";
 import AppError from "../utils/AppError.js";
 
-/*
- * ============================================================
- * VERSIONED LOAN PRICING
- * ============================================================
- *
- * Pricing is never edited in place. Changing the terms creates a
- * NEW version and closes the previous one, so a loan that was
- * submitted under older terms can always be traced back to the
- * exact configuration row it was priced with.
- *
- *   V1  effectiveFrom 2026-01-01  effectiveTo 2026-09-09  isActive false
- *   V2  effectiveFrom 2026-09-10  effectiveTo null        isActive true
- *
- * Versions are kept per loan product (not per amount band): the
- * supported product has a single applicable price list at any
- * instant, which is what the business rule describes and what
- * makes "the applicable configuration" unambiguous.
- */
-
 const ONE_SECOND_MS = 1000;
 
 function assertRanges(data) {
@@ -69,7 +50,8 @@ function normalizeVersionInput(data) {
         ? null
         : Number(data.latePenalty),
     foreclosureCharge:
-      data.foreclosureCharge === undefined || data.foreclosureCharge === null
+      data.foreclosureCharge === undefined ||
+      data.foreclosureCharge === null
         ? null
         : Number(data.foreclosureCharge),
     effectiveFrom,
@@ -83,12 +65,6 @@ function normalizeVersionInput(data) {
 }
 
 export const loanInterestConfigurationService = {
-  /*
-   * ============================================================
-   * READ
-   * ============================================================
-   */
-
   async getAll() {
     return loanInterestConfigurationRepository.findAll();
   },
@@ -123,7 +99,8 @@ export const loanInterestConfigurationService = {
       (version) =>
         version.isActive &&
         version.effectiveFrom <= now &&
-        (version.effectiveTo === null || version.effectiveTo >= now),
+        (version.effectiveTo === null ||
+          version.effectiveTo >= now),
     )?.id;
 
     return {
@@ -136,14 +113,12 @@ export const loanInterestConfigurationService = {
     };
   },
 
-  /*
-   * The configuration a new application is priced with right now.
-   * Used by both the customer wizard (display) and submission
-   * (authoritative pricing).
-   */
   async getApplicable(loanTypeId, at = new Date()) {
     const configuration =
-      await loanInterestConfigurationRepository.findApplicable(loanTypeId, at);
+      await loanInterestConfigurationRepository.findApplicable(
+        loanTypeId,
+        at,
+      );
 
     if (!configuration) {
       throw new AppError(
@@ -155,6 +130,11 @@ export const loanInterestConfigurationService = {
     return configuration;
   },
 
+  /*
+   * Customer-facing pricing lookup.
+   *
+   * This intentionally throws when no applicable configuration exists.
+   */
   async getApplicableForSupportedProduct(at = new Date()) {
     const loanType =
       await loanInterestConfigurationRepository.findLoanTypeByCode(
@@ -162,10 +142,16 @@ export const loanInterestConfigurationService = {
       );
 
     if (!loanType || !loanType.isActive) {
-      throw new AppError("This loan product is not available", 404);
+      throw new AppError(
+        "This loan product is not available",
+        404,
+      );
     }
 
-    const configuration = await this.getApplicable(loanType.id, at);
+    const configuration = await this.getApplicable(
+      loanType.id,
+      at,
+    );
 
     return {
       loanType,
@@ -174,90 +160,99 @@ export const loanInterestConfigurationService = {
   },
 
   /*
-   * ============================================================
-   * CREATE A NEW VERSION
-   * ============================================================
+   * Admin-facing configuration history.
    *
-   * Transactional:
-   *   1. re-read the currently open version(s) inside the transaction
-   *   2. close them at (newEffectiveFrom - 1s)
-   *   3. insert the new active version
+   * Unlike getApplicableForSupportedProduct(), this method does
+   * NOT require an active pricing configuration to exist.
    *
-   * Two admins saving at the same time cannot both leave an open
-   * version behind: the second transaction sees the first one's row
-   * and closes it, and a version dated at/after the new one is
-   * rejected outright.
+   * This allows the admin to open the configuration page and
+   * create the very first pricing version.
    */
+  async getSupportedProductHistory() {
+    const loanType =
+      await loanInterestConfigurationRepository.findLoanTypeByCode(
+        SCHOOL_STUDENT_LOAN_CODE,
+      );
+
+    if (!loanType || !loanType.isActive) {
+      throw new AppError(
+        "This loan product is not available",
+        404,
+      );
+    }
+
+    return this.getHistory(loanType.id);
+  },
+
   async createVersion(data) {
     const input = normalizeVersionInput(data);
 
-    return loanInterestConfigurationRepository.transaction(async (tx) => {
-      const loanType = await loanInterestConfigurationRepository.findLoanType(
-        input.loanTypeId,
-        tx,
-      );
+    return loanInterestConfigurationRepository.transaction(
+      async (tx) => {
+        const loanType =
+          await loanInterestConfigurationRepository.findLoanType(
+            input.loanTypeId,
+            tx,
+          );
 
-      if (!loanType) {
-        throw new AppError("Loan type not found", 404);
-      }
+        if (!loanType) {
+          throw new AppError("Loan type not found", 404);
+        }
 
-      if (!isSupportedLoanTypeCode(loanType.code)) {
-        throw new AppError(
-          "Pricing can only be configured for supported loan products",
-          400,
-        );
-      }
+        if (!isSupportedLoanTypeCode(loanType.code)) {
+          throw new AppError(
+            "Pricing can only be configured for supported loan products",
+            400,
+          );
+        }
 
-      const future = await loanInterestConfigurationRepository.findFutureVersion(
-        input.loanTypeId,
-        input.effectiveFrom,
-        tx,
-      );
+        const future =
+          await loanInterestConfigurationRepository.findFutureVersion(
+            input.loanTypeId,
+            input.effectiveFrom,
+            tx,
+          );
 
-      if (future) {
-        throw new AppError(
-          "A configuration version already starts on or after this effective date. Choose a later effective date.",
-          409,
-        );
-      }
-
-      const openVersions =
-        await loanInterestConfigurationRepository.findOpenVersions(
-          input.loanTypeId,
-          input.effectiveFrom,
-          tx,
-        );
-
-      const closesAt = new Date(input.effectiveFrom.getTime() - ONE_SECOND_MS);
-
-      for (const version of openVersions) {
-        if (version.effectiveFrom >= input.effectiveFrom) {
+        if (future) {
           throw new AppError(
             "A configuration version already starts on or after this effective date. Choose a later effective date.",
             409,
           );
         }
 
-        await loanInterestConfigurationRepository.closeVersion(
-          version.id,
-          closesAt,
-          tx,
+        const openVersions =
+          await loanInterestConfigurationRepository.findOpenVersions(
+            input.loanTypeId,
+            input.effectiveFrom,
+            tx,
+          );
+
+        const closesAt = new Date(
+          input.effectiveFrom.getTime() - ONE_SECOND_MS,
         );
-      }
 
-      return loanInterestConfigurationRepository.createIn(tx, input);
-    });
+        for (const version of openVersions) {
+          if (version.effectiveFrom >= input.effectiveFrom) {
+            throw new AppError(
+              "A configuration version already starts on or after this effective date. Choose a later effective date.",
+              409,
+            );
+          }
+
+          await loanInterestConfigurationRepository.closeVersion(
+            version.id,
+            closesAt,
+            tx,
+          );
+        }
+
+        return loanInterestConfigurationRepository.createIn(
+          tx,
+          input,
+        );
+      },
+    );
   },
-
-  /*
-   * ============================================================
-   * LEGACY WRITE PATHS
-   * ============================================================
-   *
-   * In-place edits of pricing are no longer permitted: they would
-   * silently reprice historical loans. Kept as explicit failures so
-   * any forgotten caller surfaces loudly instead of mutating data.
-   */
 
   async create(data) {
     return this.createVersion(data);
@@ -275,7 +270,10 @@ export const loanInterestConfigurationService = {
       await loanInterestConfigurationRepository.findById(id);
 
     if (!configuration || configuration.isDeleted) {
-      throw new AppError("Interest configuration not found", 404);
+      throw new AppError(
+        "Interest configuration not found",
+        404,
+      );
     }
 
     if (isActive) {
@@ -285,7 +283,10 @@ export const loanInterestConfigurationService = {
       );
     }
 
-    return loanInterestConfigurationRepository.updateStatus(id, false);
+    return loanInterestConfigurationRepository.updateStatus(
+      id,
+      false,
+    );
   },
 
   async delete(id) {
@@ -293,7 +294,10 @@ export const loanInterestConfigurationService = {
       await loanInterestConfigurationRepository.findById(id);
 
     if (!configuration || configuration.isDeleted) {
-      throw new AppError("Interest configuration not found", 404);
+      throw new AppError(
+        "Interest configuration not found",
+        404,
+      );
     }
 
     const usageCount =

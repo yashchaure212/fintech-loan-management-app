@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { baseApi } from "./api/baseApi";
-import "@/features/auth/authApi";
+import "@/features/auth/api/authApi";
 import "@/features/loan/api/schoolLoanApi";
 import "@/features/loan/api/institutionApi";
 import "@/features/loan/api/existingLoanApi";

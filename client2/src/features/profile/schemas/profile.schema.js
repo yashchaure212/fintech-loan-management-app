@@ -1,34 +1,17 @@
 import { z } from "zod";
 
-//PERSONAL DETAILS
+export const createProfileSchema = z.object({
+  firstName: z.string().min(2).max(50),
 
-export const personalDetailsSchema = z.object({
-  firstName: z
-    .string()
-    .min(2, "First name must be at least 2 characters")
-    .max(50, "First name is too long"),
+  lastName: z.string().max(50).optional(),
 
-  dateOfBirth: z
-    .string()
-    .min(1, "Date of birth is required"),
+  dateOfBirth: z.string().optional(),
 
-  gender: z
-    .string()
-    .min(1, "Please select your gender"),
+  gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
 
-  occupation: z
-    .string()
-    .min(2, "Occupation must be at least 2 characters")
-    .max(100, "Occupation is too long"),
-});
+  occupation: z.string().max(100).optional(),
 
-//ADDRESS
+  panNumber: z.string().length(10).optional(),
 
-export const addressSchema = z.object({
-  type: z.string().min(1, "Address type is required"),
-  line1: z.string().trim().min(3, "Address Line 1 is required"),
-  line2: z.string().trim().optional(),
-  city: z.string().trim().min(2, "City is required"),
-  state: z.string().trim().min(2, "State is required"),
-  pincode: z.string().regex(/^[1-9][0-9]{5}$/, "Invalid pincode"),
+  aadhaarNumber: z.string().length(12).optional(),
 });

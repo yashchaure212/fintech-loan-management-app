@@ -19,6 +19,8 @@ function Landing() {
         {/* Quick product navigation */}
         <LandingQuickLinks />
 
+        <LoanDraftResumeCard />
+
         {/* Promotional announcement */}
         <section className="border-b border-[#eadfca] bg-[#fff8e9] px-3 py-2 sm:px-4 sm:py-2.5 lg:px-6">
           <div className="mx-auto max-w-[1440px]">
