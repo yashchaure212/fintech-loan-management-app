@@ -1,5 +1,4 @@
 import { CheckCircle2, Circle } from "lucide-react";
-
 import { Progress } from "@/components/ui/progress";
 
 function ProfileProgress({ profile, address }) {
@@ -7,8 +6,7 @@ function ProfileProgress({ profile, address }) {
     !!profile?.firstName &&
     !!profile?.dateOfBirth &&
     !!profile?.gender &&
-    !!profile?.panNumber &&
-    !!profile?.aadhaarNumber;
+    !!profile?.occupation;
 
   const addressCompleted =
     !!address?.line1 &&
@@ -17,60 +15,71 @@ function ProfileProgress({ profile, address }) {
     !!address?.pincode;
 
   const completed = Number(personalCompleted) + Number(addressCompleted);
-
   const percentage = completed * 50;
 
   const steps = [
     {
       title: "Personal Details",
+      description: "Basic personal information and occupation.",
       completed: personalCompleted,
     },
     {
       title: "Address",
+      description: "Current residential address information.",
       completed: addressCompleted,
     },
   ];
 
   return (
     <section className="app-card overflow-hidden">
-      {/* Header */}
+      {/* HEADER */}
       <div className="border-b border-subtle px-5 py-5 sm:px-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="section-eyebrow mb-3">Profile setup</div>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <span className="section-eyebrow">
+              Profile setup
+            </span>
 
-            <h2 className="section-title text-base sm:text-lg">
-              Complete Your Profile
+            <h2 className="section-title mt-3">
+              Complete your profile
             </h2>
 
-            <p className="text-helper mt-1.5 max-w-xl">
-              Complete your profile before applying for a loan.
+            <p className="text-helper mt-1">
+              Add your basic personal and address information.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 sm:block sm:min-w-20 sm:text-right">
+          <div className="shrink-0 sm:text-right">
             <p className="financial-value-lg text-2xl sm:text-3xl">
               {percentage}%
             </p>
 
-            <p className="text-caption">Completed</p>
+            <p className="text-caption mt-0.5">
+              Completed
+            </p>
           </div>
         </div>
 
-        <div className="mt-5">
+        {/* PROGRESS */}
+        <div className="mt-6">
           <div className="mb-2 flex items-center justify-between">
-            <span className="financial-label">Profile progress</span>
+            <span className="financial-label">
+              Profile progress
+            </span>
 
             <span className="text-caption">
               {completed} of {steps.length} sections
             </span>
           </div>
 
-          <Progress value={percentage} className="h-2" />
+          <Progress
+            value={percentage}
+            className="h-2"
+          />
         </div>
       </div>
 
-      {/* Completion Steps */}
+      {/* STEPS */}
       <div className="divide-y divide-[hsl(var(--border-subtle))]">
         {steps.map((step) => (
           <div
@@ -92,7 +101,11 @@ function ProfileProgress({ profile, address }) {
                     className="text-green"
                   />
                 ) : (
-                  <Circle size={19} strokeWidth={1.8} className="text-subtle" />
+                  <Circle
+                    size={19}
+                    strokeWidth={1.8}
+                    className="text-subtle"
+                  />
                 )}
               </div>
 
@@ -104,7 +117,7 @@ function ProfileProgress({ profile, address }) {
                 <p className="text-helper mt-0.5">
                   {step.completed
                     ? "This section is complete."
-                    : "This section still needs your information."}
+                    : step.description}
                 </p>
               </div>
             </div>

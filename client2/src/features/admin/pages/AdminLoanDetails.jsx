@@ -49,6 +49,10 @@ import {
 } from "@/components/ui/dialog";
 
 import { formatCurrency } from "@/features/loan/utils/loanFormatters";
+import {
+  HOME_OWNERSHIP_LABELS,
+  SALARY_FREQUENCY_LABELS,
+} from "@/features/loan/constants/loanEnums";
 
 const workflow = {
   DRAFT: [],
@@ -429,7 +433,7 @@ function AdminLoanDetails() {
               <ContentSection
                 eyebrow="Configuration"
                 title="Loan configuration"
-                description="Configuration captured when this application was created."
+                description="Pricing version captured for this application. Historical loans are never repriced."
                 icon={Landmark}
               >
                 <div className="border-y border-border py-6">
@@ -570,7 +574,12 @@ function AdminLoanDetails() {
 
                     <AdminField
                       label="School type"
-                      value={loan.schoolLoan.schoolType}
+                      value={
+                        loan.schoolLoan.institution?.schoolType ||
+                        loan.schoolLoan.schoolType ||
+                        "-"
+                      }
+                      hint="From institution records"
                     />
 
                     <AdminField
@@ -738,6 +747,24 @@ function AdminLoanDetails() {
                               : "-"
                           }
                         />
+
+                        <AdminField
+                          label="Permanent address"
+                          value={
+                            person.sameAsCurrentAddress
+                              ? "Same as current"
+                              : person.permanentAddress
+                                ? `${person.permanentAddress.city}, ${person.permanentAddress.state}`
+                                : "-"
+                          }
+                        />
+
+                        <AdminField
+                          label="Home ownership"
+                          value={
+                            HOME_OWNERSHIP_LABELS[person.homeOwnership] || "-"
+                          }
+                        />
                       </div>
 
                       {person.employment ? (
@@ -774,6 +801,24 @@ function AdminLoanDetails() {
                                   person.employment.agriculturalIncome,
                               )}
                             />
+
+                            {person.employment.salaryFrequency ? (
+                              <AdminField
+                                label="Salary frequency"
+                                value={
+                                  SALARY_FREQUENCY_LABELS[
+                                    person.employment.salaryFrequency
+                                  ] || person.employment.salaryFrequency
+                                }
+                              />
+                            ) : null}
+
+                            {person.employment.salaryAccountBank ? (
+                              <AdminField
+                                label="Salary account bank"
+                                value={person.employment.salaryAccountBank}
+                              />
+                            ) : null}
 
                             {person.employment.registrations?.length > 0 ? (
                               <AdminField
@@ -1014,7 +1059,7 @@ function AdminLoanDetails() {
           STICKY DECISION BAR
       ========================================================= */}
       {availableActions.length > 0 ? (
-        <div className="fixed inset-x-0 bottom-16 z-40 border-t border-border bg-background/95 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur lg:bottom-0">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur">
           <div className="mx-auto flex max-w-[1480px] flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8 xl:flex-row xl:items-center xl:justify-between">
             <div className="hidden xl:block">
               <p className="text-sm font-bold">Application decision</p>

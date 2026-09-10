@@ -19,7 +19,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import StatusBadge from "@/components/common/StatusBadge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+import StatusBadge from "@/components/shared/StatusBadge";
 import { formatCurrency } from "@/features/loan/utils/loanFormatters";
 
 import { useGetAdminLoansQuery } from "../api/adminLoanApi";
@@ -46,10 +54,13 @@ function formatStatus(status) {
 function AdminLoans() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("ALL");
 
   const { data, isLoading, isError } = useGetAdminLoansQuery({
     page,
     limit: 20,
+    status,
+    search,
   });
 
   if (isLoading) {
@@ -102,24 +113,6 @@ function AdminLoans() {
   const loans = data?.data?.items || [];
   const totalPages = data?.data?.totalPages || 1;
 
-  const filteredLoans = loans.filter((loan) => {
-    if (!search.trim()) return true;
-
-    const query = search.toLowerCase();
-
-    const applicationNumber = loan.applicationNumber?.toLowerCase() || "";
-
-    const customerName = getCustomerName(loan).toLowerCase();
-
-    const loanType = loan.loanType?.name?.toLowerCase() || "";
-
-    return (
-      applicationNumber.includes(query) ||
-      customerName.includes(query) ||
-      loanType.includes(query)
-    );
-  });
-
   return (
     <div className="space-y-8">
       {/* Page header */}
@@ -128,7 +121,9 @@ function AdminLoans() {
           <div className="flex items-center gap-2 text-muted-foreground">
             <FileText className="size-4" />
 
-            <span className="text-xs font-medium">Loan operations</span>
+            <span className="text-xs font-meconst [page, setPage] = useState(1);dium">
+              Loan operations
+            </span>
           </div>
 
           <h1 className="page-title mt-3">Loan applications</h1>
@@ -161,14 +156,63 @@ function AdminLoans() {
           />
         </div>
 
-        <Button variant="outline" size="sm" className="w-full sm:w-auto">
-          <SlidersHorizontal />
-          Filters
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+              <SlidersHorizontal />
+              Filters
+              {status !== "ALL" ? (
+                <span className="ml-1 rounded-full bg-primary px-2 py-0.5 text-[10px] text-primary-foreground">
+                  1
+                </span>
+              ) : null}
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuRadioGroup
+              value={status}
+              onValueChange={(value) => {
+                setStatus(value);
+                setPage(1);
+              }}
+            >
+              <DropdownMenuRadioItem value="ALL">
+                All applications
+              </DropdownMenuRadioItem>
+
+              <DropdownMenuRadioItem value="DRAFT">Draft</DropdownMenuRadioItem>
+
+              <DropdownMenuRadioItem value="SUBMITTED">
+                Submitted
+              </DropdownMenuRadioItem>
+
+              <DropdownMenuRadioItem value="UNDER_REVIEW">
+                Under review
+              </DropdownMenuRadioItem>
+
+              <DropdownMenuRadioItem value="APPROVED">
+                Approved
+              </DropdownMenuRadioItem>
+
+              <DropdownMenuRadioItem value="REJECTED">
+                Rejected
+              </DropdownMenuRadioItem>
+
+              <DropdownMenuRadioItem value="DISBURSED">
+                Disbursed
+              </DropdownMenuRadioItem>
+
+              <DropdownMenuRadioItem value="CLOSED">
+                Closed
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Desktop table */}
-      {filteredLoans.length === 0 ? (
+      {loans.length === 0 ? (
         <div className="py-16 text-center">
           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-muted">
             <FileText className="size-5 text-muted-foreground" />
@@ -205,7 +249,7 @@ function AdminLoans() {
               </TableHeader>
 
               <TableBody>
-                {filteredLoans.map((loan) => (
+                {loans.map((loan) => (
                   <TableRow
                     key={loan.id}
                     className="group border-b border-border/50 transition-colors hover:bg-muted/25"
@@ -273,7 +317,7 @@ function AdminLoans() {
 
           {/* Mobile */}
           <div className="space-y-1 md:hidden">
-            {filteredLoans.map((loan) => (
+            {loans.map((loan) => (
               <Link
                 key={loan.id}
                 to={`/admin/loans/${loan.id}`}

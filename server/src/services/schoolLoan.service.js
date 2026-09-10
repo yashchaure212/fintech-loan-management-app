@@ -141,6 +141,7 @@ function buildCoApplicantScalarData(person) {
     familyMonthlyIncome: normalizeOptional(person.familyMonthlyIncome),
     sameAsCurrentAddress: person.sameAsCurrentAddress ?? false,
     yearsAtCurrentAddress: normalizeOptional(person.yearsAtCurrentAddress),
+    homeOwnership: normalizeOptional(person.homeOwnership),
   };
 }
 
@@ -169,10 +170,14 @@ const SCHOOL_LOAN_SCALAR_FIELDS = [
   "mobile",
   "email",
   "aadhaarNumber",
-  "panNumber",
+  /*
+   * "panNumber" (student PAN), "schoolType" (customer-entered) and
+   * "expectedDisbursementDate" are intentionally absent: they are no
+   * longer collected. The columns are retained for historical records,
+   * but nothing in the application can write them again.
+   */
   "currentSchoolName",
   "institutionId",
-  "schoolType",
   "currentClass",
   "academicYear",
   "continuingSameSchool",
@@ -184,7 +189,6 @@ const SCHOOL_LOAN_SCALAR_FIELDS = [
   "previousAcademicYear",
   "previousClassPercentage",
   "loanPurpose",
-  "expectedDisbursementDate",
   "tuitionFees",
   "admissionFees",
   "examinationFees",

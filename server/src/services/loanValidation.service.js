@@ -727,19 +727,6 @@ export const loanValidationService = {
       this.validateSchoolLoanCompleteness(application);
       this.validateApplicationEligibility(application, eligibilityRule);
 
-      const state = this.getCompletenessState(
-        application,
-        requiredDocuments,
-        uploadedDocuments,
-      );
-
-      if (!state.step6) {
-        throw new AppError(
-          "Upload all required documents before submission",
-          400,
-        );
-      }
-
       this.validateDocuments(requiredDocuments, uploadedDocuments);
       return;
     }
@@ -753,19 +740,6 @@ export const loanValidationService = {
 
     this.validateStudentLoanCompleteness(application);
     this.validateApplicationEligibility(application, eligibilityRule);
-
-    const state = this.getCompletenessState(
-      application,
-      requiredDocuments,
-      uploadedDocuments,
-    );
-
-    if (!state.step4) {
-      throw new AppError(
-        "Upload all required documents before submission",
-        400,
-      );
-    }
 
     this.validateDocuments(requiredDocuments, uploadedDocuments);
   },
@@ -807,23 +781,23 @@ export const loanValidationService = {
     );
   },
 
+  /*
+   * Uses the same resolved requirement list the customer UI renders,
+   * so nothing can be mandatory here yet invisible there. An uploaded
+   * document awaiting review satisfies its slot.
+   */
   validateDocuments(requiredDocuments, uploadedDocuments) {
-    const uploadedKeys = new Set(
-      uploadedDocuments
-        .filter((doc) => doc.status !== "REJECTED")
-        .map((doc) => `${doc.ownerType}:${doc.documentType}`),
-    );
-
-    const missingDocuments = requiredDocuments
-      .filter((doc) => doc.isMandatory)
-      .filter(
-        (doc) => !uploadedKeys.has(`${doc.ownerType}:${doc.documentType}`),
-      )
-      .map((doc) => `${doc.ownerType}:${doc.documentType}`);
+    const missingDocuments =
+      loanRequiredDocumentService.describeMissingMandatoryDocuments(
+        requiredDocuments,
+        uploadedDocuments,
+      );
 
     if (missingDocuments.length > 0) {
       throw new AppError(
-        `Missing required documents: ${missingDocuments.join(", ")}`,
+        missingDocuments.length === 1
+          ? `Please upload the ${missingDocuments[0]}.`
+          : `Please upload the following documents: ${missingDocuments.join(", ")}.`,
         400,
       );
     }

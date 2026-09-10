@@ -1,19 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-
 import "@fontsource-variable/geist";
-
 import { Provider } from "react-redux";
-
 import { store } from "./app/store";
-
 import App from "./App";
-
 import "./index.css";
 
-import { ThemeProvider } from "./components/theme/ThemeProvider";
-import AuthInitializer from "./components/common/AuthInitializer";
-import AppToaster from "./components/common/Toaster";
+import { ThemeProvider } from "./features/theme/ThemeProvider";
+import AuthInitializer from "./app/providers/AuthInitializer";
+import AppToaster from "./components/shared/Toaster";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -22,7 +17,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <AuthInitializer>
           <App />
         </AuthInitializer>
-
         <AppToaster />
       </ThemeProvider>
     </Provider>

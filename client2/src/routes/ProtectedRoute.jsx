@@ -1,7 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
-
-import FullPageLoader from "@/components/common/FullPageLoader";
+import FullPageLoader from "@/components/shared/FullPageLoader";
 
 function getUserRole(user) {
   if (!user?.role) {
@@ -35,38 +34,10 @@ function ProtectedRoute({ role, children }) {
     (state) => state.auth,
   );
 
-  /*
-   * -------------------------------------------------------------
-   * AUTH RESTORATION
-   * -------------------------------------------------------------
-   *
-   * The application may still be checking whether a previous
-   * session can be restored.
-   *
-   * Never redirect to login during this period.
-   */
   if (!isInitialized) {
     return <FullPageLoader />;
   }
 
-  /*
-   * -------------------------------------------------------------
-   * AUTHENTICATION CHECK
-   * -------------------------------------------------------------
-   *
-   * Preserve:
-   * - pathname
-   * - query string
-   * - hash
-   *
-   * Example:
-   *
-   * /customer/loans/apply?step=2#documents
-   *
-   * becomes:
-   *
-   * /login?redirect=%2Fcustomer%2Floans%2Fapply%3Fstep%3D2%23documents
-   */
   if (!isAuthenticated) {
     const redirect = `${location.pathname}${location.search}${location.hash}`;
 
@@ -79,32 +50,12 @@ function ProtectedRoute({ role, children }) {
     );
   }
 
-  /*
-   * -------------------------------------------------------------
-   * USER RESTORATION
-   * -------------------------------------------------------------
-   *
-   * We have an access token but user details have not arrived yet.
-   */
   if (!user) {
     return <FullPageLoader message="Loading your account..." />;
   }
 
   const userRole = getUserRole(user);
 
-  /*
-   * -------------------------------------------------------------
-   * ROLE AUTHORIZATION
-   * -------------------------------------------------------------
-   *
-   * Supports:
-   *
-   * role="ADMIN"
-   *
-   * and:
-   *
-   * role={["ADMIN", "CUSTOMER"]}
-   */
   if (role) {
     const allowedRoles = Array.isArray(role) ? role : [role];
 
@@ -113,23 +64,6 @@ function ProtectedRoute({ role, children }) {
     }
   }
 
-  /*
-   * -------------------------------------------------------------
-   * RENDER
-   * -------------------------------------------------------------
-   *
-   * Supports both:
-   *
-   * <ProtectedRoute>
-   *   <Page />
-   * </ProtectedRoute>
-   *
-   * and:
-   *
-   * <ProtectedRoute>
-   *   <Outlet />
-   * </ProtectedRoute>
-   */
   return children ?? <Outlet />;
 }
 

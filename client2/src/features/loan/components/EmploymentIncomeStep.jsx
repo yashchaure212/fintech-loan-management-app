@@ -11,8 +11,12 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import FormInput from "@/components/common/FormInput";
-import FormField from "@/components/common/FormField";
+import FormInput from "@/components/shared/FormInput";
+import FormField from "@/components/shared/FormField";
+import {
+  SALARY_FREQUENCIES,
+  SALARY_FREQUENCY_VALUES,
+} from "../constants/loanEnums";
 import {
   LoanWizardShell,
   LoanWizardActions,
@@ -42,7 +46,9 @@ const employmentSchema = z
     industryType: z.string().trim().optional(),
     dateOfJoining: z.string().optional(),
     monthlyIncome: z.string().trim().optional(),
-    salaryFrequency: z.string().trim().optional(),
+    salaryFrequency: z
+      .enum(SALARY_FREQUENCY_VALUES)
+      .optional(),
     previousYearIncome: z.string().trim().optional(),
     salaryAccountBank: z.string().trim().optional(),
 
@@ -95,6 +101,14 @@ const employmentSchema = z
           code: "custom",
           path: ["monthlyIncome"],
           message: "Monthly income is required",
+        });
+      }
+
+      if (!employment.salaryFrequency) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["salaryFrequency"],
+          message: "Salary frequency is required for salaried employment",
         });
       }
     }
@@ -640,9 +654,31 @@ function EmploymentIncomeStep({ loanApplicationId, onBack, onNext }) {
                           )}
                         />
 
+                        <FormField
+                          label="Salary frequency"
+                          required
+                          error={
+                            errors.coApplicants?.[index]?.employment
+                              ?.salaryFrequency?.message
+                          }
+                        >
+                          <select
+                            className={selectClassName}
+                            {...register(
+                              `coApplicants.${index}.employment.salaryFrequency`,
+                            )}
+                          >
+                            {SALARY_FREQUENCIES.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </FormField>
+
                         <FormInput
                           label="Salary account bank"
-                          helperText="Optional"
+                          helperText="Bank where the salary is credited. This is separate from the bank account details captured earlier."
                           placeholder="e.g. State Bank of India"
                           error={
                             errors.coApplicants?.[index]?.employment

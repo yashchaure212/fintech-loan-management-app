@@ -2,8 +2,13 @@ import { adminLoanRepository } from "../repositories/adminLoan.repository.js";
 import AppError from "../utils/AppError.js";
 
 export const adminLoanService = {
-  async getApplications({ page, limit }) {
-    return adminLoanRepository.getAllApplications({ page, limit });
+  async getApplications({ page, limit, status, search }) {
+    return adminLoanRepository.getAllApplications({
+      page,
+      limit,
+      status,
+      search,
+    });
   },
 
   async getApplication(id) {

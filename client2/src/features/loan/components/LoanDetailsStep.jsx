@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import FormField from "@/components/common/FormField";
+import FormField from "@/components/shared/FormField";
 import {
   LoanWizardShell,
   LoanWizardActions,
   selectClassName,
 } from "./LoanWizardShell";
 import { formatCurrency, formatCurrencyRange } from "../utils/loanFormatters";
+import { SCHOOL_STUDENT_LOAN_CODE } from "../constants/loanEnums";
 
 function LoanDetailsStep({
   onNext,
@@ -28,10 +29,12 @@ function LoanDetailsStep({
   const loanTypes = useMemo(() => {
     const types = data?.data || [];
 
-    return types.filter(
-      (loan) =>
-        loan.code !== "STUDENT_LOAN" && loan.code !== "EDUCATION_LOAN",
-    );
+    /*
+     * Whitelist, not blacklist: only the supported product can ever be
+     * offered, so a legacy or newly seeded product can never appear in
+     * the customer catalogue by accident.
+     */
+    return types.filter((loan) => loan.code === SCHOOL_STUDENT_LOAN_CODE);
   }, [data?.data]);
 
   const {
@@ -98,7 +101,7 @@ function LoanDetailsStep({
     return loanTypes.find((loan) => loan.id === loanTypeId) || null;
   }, [loanTypeId, loanTypes]);
 
-  const isSchoolLoanSelected = selectedLoan?.code === "SCHOOL_STUDENT_LOAN";
+  const isSchoolLoanSelected = selectedLoan?.code === SCHOOL_STUDENT_LOAN_CODE;
 
   useEffect(() => {
     if (isEditMode || loanTypeId || loanTypes.length !== 1) {

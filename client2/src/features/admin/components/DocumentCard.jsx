@@ -3,7 +3,7 @@ import { ExternalLink, FileCheck2, FileText } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import StatusBadge from "@/components/common/StatusBadge";
+import StatusBadge from "@/components/shared/StatusBadge";
 import {
   Dialog,
   DialogContent,

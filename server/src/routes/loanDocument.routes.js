@@ -32,6 +32,13 @@ router.post(
 );
 
 router.get(
+  "/application/:loanApplicationId/checklist",
+  protect,
+  authorize("CUSTOMER"),
+  loanDocumentController.getChecklist,
+);
+
+router.get(
   "/application/:loanApplicationId/requirements",
   protect,
   authorize("CUSTOMER"),

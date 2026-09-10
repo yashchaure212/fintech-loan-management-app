@@ -1,39 +1,46 @@
 import prisma from "../src/config/prisma.js";
 import { hashPassword } from "../src/services/password.service.js";
+import {
+  SCHOOL_STUDENT_LOAN_CODE,
+  isAllowedSchoolLoanRequirement,
+} from "../src/constants/loanProducts.js";
 
 /*
- * Launch-readiness audit #4 / §8 item 7:
- * Loan types, interest configs, eligibility rules, required documents, and
- * institutions are reference data. They are managed here (or via the DB),
- * not through an admin UI. Admin HTTP CRUD exists for scripts later; the
- * product UI is application review only.
+ * ============================================================
+ * SEED
+ * ============================================================
+ *
+ * Seeds reference data for the ONE supported customer product:
+ * School Student Loan.
+ *
+ * Everything here is idempotent - running it repeatedly never
+ * creates a duplicate configuration version or a duplicate
+ * document requirement.
+ *
+ * Legacy products are deactivated rather than deleted so that
+ * historical applications keep their product, pricing and
+ * documents intact.
  */
+
+const LEGACY_LOAN_TYPE_CODES = ["STUDENT_LOAN", "EDUCATION_LOAN", "PERSONAL_LOAN"];
 
 async function seedRoles() {
   console.log("🌱 Seeding roles...");
 
   const roles = [
-    {
-      name: "ADMIN",
-      description: "System Administrator",
-    },
-    {
-      name: "CUSTOMER",
-      description: "Customer",
-    },
+    { name: "ADMIN", description: "System Administrator" },
+    { name: "CUSTOMER", description: "Customer" },
   ];
 
   for (const role of roles) {
     await prisma.role.upsert({
-      where: {
-        name: role.name,
-      },
+      where: { name: role.name },
       update: {},
       create: role,
     });
   }
 
-  console.log("✅ Roles seeded successfully");
+  console.log("✅ Roles seeded");
 }
 
 async function seedAdmin() {
@@ -44,7 +51,7 @@ async function seedAdmin() {
 
   if (isProduction && (!adminEmail || !adminPassword)) {
     console.log(
-      "⏭️ Skipping admin seed in production. Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to seed an admin user.",
+      "⏭️  Skipping admin seed in production. Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to seed an admin user.",
     );
     return;
   }
@@ -60,22 +67,16 @@ async function seedAdmin() {
 
   if (!isProduction && !adminPassword) {
     console.log(
-      "⚠️  Using default development admin credentials. Set SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD, and SEED_ADMIN_PHONE to override.",
+      "⚠️  Using default development admin credentials. Set SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD and SEED_ADMIN_PHONE to override.",
     );
   }
 
   console.log("🌱 Seeding admin user...");
 
-  const adminRole = await prisma.role.findUnique({
-    where: {
-      name: "ADMIN",
-    },
-  });
+  const adminRole = await prisma.role.findUnique({ where: { name: "ADMIN" } });
 
   await prisma.user.upsert({
-    where: {
-      email,
-    },
+    where: { email },
     update: {},
     create: {
       roleId: adminRole.id,
@@ -88,190 +89,116 @@ async function seedAdmin() {
     },
   });
 
-  console.log(`✅ Admin user seeded successfully (${email})`);
+  console.log(`✅ Admin user seeded (${email})`);
 }
 
-async function hideLegacyLoanTypes() {
+/*
+ * Legacy products stay in the database (historical applications
+ * reference them) but can never be selected again.
+ */
+async function deactivateLegacyLoanTypes() {
   const result = await prisma.loanType.updateMany({
-    where: {
-      code: {
-        in: ["STUDENT_LOAN", "EDUCATION_LOAN"],
-      },
-    },
-    data: {
-      isActive: false,
-    },
+    where: { code: { in: LEGACY_LOAN_TYPE_CODES } },
+    data: { isActive: false },
   });
 
   console.log(
-    `🙈 Hidden legacy loan types (STUDENT_LOAN / EDUCATION_LOAN): ${result.count} row(s) set isActive=false`,
+    `🙈 Legacy loan products deactivated: ${result.count} row(s) set isActive=false`,
   );
 }
 
-async function seedStudentLoanProduct() {
-  console.log("🌱 Seeding Student Loan product (hidden from apply)...");
+/*
+ * ============================================================
+ * CANONICAL DOCUMENT SET
+ * ============================================================
+ *
+ * This is the exact customer-facing checklist. Anything not listed
+ * here is removed from the product so it can never become a hidden
+ * mandatory requirement at submission.
+ *
+ * Deliberately absent:
+ *   - Student PAN            (a school student has no PAN)
+ *   - Student Address Proof  (address belongs to the co-applicant)
+ *   - OTHER                  (no free-form document slot)
+ */
+function buildCanonicalRequirements() {
+  const studentDocuments = [
+    { documentType: "AADHAAR_CARD", isMandatory: true },
+    { documentType: "BIRTH_CERTIFICATE", isMandatory: true },
+    { documentType: "SCHOOL_ADMISSION_PROOF", isMandatory: true },
+    { documentType: "FEE_STRUCTURE", isMandatory: true },
+    { documentType: "PREVIOUS_CLASS_RESULT", isMandatory: false },
+  ].map((doc) => ({ ...doc, ownerType: "STUDENT", employmentType: null }));
 
-  const loanType = await prisma.loanType.upsert({
-    where: {
-      code: "STUDENT_LOAN",
-    },
-    update: {
-      name: "Student Loan",
-      isActive: false,
-    },
-    create: {
-      name: "Student Loan",
-      code: "STUDENT_LOAN",
-      description: "Finance tuition and other costs for higher education.",
-      category: "UNSECURED",
-      displayOrder: 1,
-      isActive: false,
-    },
-  });
+  const coApplicantDocuments = ["FATHER", "MOTHER", "GUARDIAN"].flatMap(
+    (ownerType) => [
+      // Identity and banking, required regardless of employment
+      { documentType: "AADHAAR_CARD", employmentType: null, isMandatory: true },
+      { documentType: "PAN_CARD", employmentType: null, isMandatory: true },
+      { documentType: "BANK_STATEMENT", employmentType: null, isMandatory: true },
 
-  const existingConfig = await prisma.loanInterestConfiguration.findFirst({
-    where: {
-      loanTypeId: loanType.id,
-    },
-  });
+      // Salaried
+      { documentType: "SALARY_SLIP", employmentType: "SALARIED", isMandatory: true },
 
-  if (!existingConfig) {
-    await prisma.loanInterestConfiguration.create({
-      data: {
-        loanTypeId: loanType.id,
-        minAmount: 50000,
-        maxAmount: 2000000,
-        minTenure: 12,
-        maxTenure: 84,
-        interestRate: 9.5,
-        processingFee: 1,
-        processingFeeType: "PERCENTAGE",
-        gstPercentage: 18,
-        latePenalty: 500,
-        isActive: true,
-      },
-    });
-  }
+      // Self-employed / retired / other: a general income proof
+      { documentType: "INCOME_PROOF", employmentType: "SELF_EMPLOYED", isMandatory: true },
+      { documentType: "INCOME_PROOF", employmentType: "RETIRED", isMandatory: true },
+      { documentType: "INCOME_PROOF", employmentType: "OTHER", isMandatory: true },
 
-  const existingEligibility = await prisma.loanEligibility.findFirst({
-    where: {
-      loanTypeId: loanType.id,
-    },
-  });
+      // Contract
+      { documentType: "CONTRACT_LETTER", employmentType: "CONTRACT", isMandatory: true },
 
-  if (!existingEligibility) {
-    await prisma.loanEligibility.create({
-      data: {
-        loanTypeId: loanType.id,
-        minimumAge: 18,
-        maximumAge: 45,
-        minimumIncome: 0,
-      },
-    });
-  }
+      // Business (GST / Udyam become mandatory only when that
+      // registration is actually declared - see the resolver)
+      { documentType: "BUSINESS_PROOF", employmentType: "BUSINESS", isMandatory: true },
+      { documentType: "BUSINESS_REGISTRATION", employmentType: "BUSINESS", isMandatory: true },
+      { documentType: "GST_CERTIFICATE", employmentType: "BUSINESS", isMandatory: false },
+      { documentType: "UDYAM_CERTIFICATE", employmentType: "BUSINESS", isMandatory: false },
 
-  const requiredDocuments = [
-    // =====================================================
-    // STUDENT DOCUMENTS
-    // =====================================================
+      // Farmer (lease proof applies only to leased land)
+      { documentType: "LAND_RECORD", employmentType: "FARMER", isMandatory: true },
+      { documentType: "LAND_LEASE_PROOF", employmentType: "FARMER", isMandatory: false },
+    ].map((doc) => ({ ...doc, ownerType })),
+  );
 
+  // Only requested when existing borrowings are declared
+  const applicantDocuments = [
     {
-      documentType: "AADHAAR_CARD",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: true,
-    },
-
-    {
-      documentType: "PAN_CARD",
-      ownerType: "STUDENT",
+      documentType: "EXISTING_LOAN_STATEMENT",
+      ownerType: "APPLICANT",
       employmentType: null,
       isMandatory: false,
-    },
-
-    {
-      documentType: "TENTH_MARKSHEET",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: false,
-    },
-
-    {
-      documentType: "TWELFTH_MARKSHEET",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: false,
-    },
-
-    {
-      documentType: "ADMISSION_LETTER",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: false,
-    },
-
-    {
-      documentType: "FEE_STRUCTURE",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: false,
-    },
-
-    // =====================================================
-    // FATHER - BASE DOCUMENTS
-    // =====================================================
-
-    {
-      documentType: "AADHAAR_CARD",
-      ownerType: "FATHER",
-      employmentType: null,
-      isMandatory: true,
-    },
-
-    {
-      documentType: "PAN_CARD",
-      ownerType: "FATHER",
-      employmentType: null,
-      isMandatory: true,
-    },
-
-    {
-      documentType: "INCOME_PROOF",
-      ownerType: "FATHER",
-      employmentType: null,
-      isMandatory: true,
-    },
-
-    // =====================================================
-    // FATHER - EMPLOYMENT SPECIFIC
-    // =====================================================
-
-    {
-      documentType: "SALARY_SLIP",
-      ownerType: "FATHER",
-      employmentType: "SALARIED",
-      isMandatory: true,
-    },
-
-    {
-      documentType: "BUSINESS_PROOF",
-      ownerType: "FATHER",
-      employmentType: "BUSINESS",
-      isMandatory: true,
-    },
-
-    {
-      documentType: "LAND_RECORD",
-      ownerType: "FATHER",
-      employmentType: "FARMER",
-      isMandatory: true,
     },
   ];
 
-  for (const doc of requiredDocuments) {
+  const all = [
+    ...studentDocuments,
+    ...coApplicantDocuments,
+    ...applicantDocuments,
+  ];
+
+  const rejected = all.filter(
+    (doc) => !isAllowedSchoolLoanRequirement(doc.ownerType, doc.documentType),
+  );
+
+  if (rejected.length > 0) {
+    throw new Error(
+      `Seed defines document slots that the product does not allow: ${rejected
+        .map((doc) => `${doc.ownerType}:${doc.documentType}`)
+        .join(", ")}`,
+    );
+  }
+
+  return all;
+}
+
+async function syncRequiredDocuments(loanTypeId) {
+  const canonical = buildCanonicalRequirements();
+
+  for (const doc of canonical) {
     const existing = await prisma.loanRequiredDocument.findFirst({
       where: {
-        loanTypeId: loanType.id,
+        loanTypeId,
         documentType: doc.documentType,
         ownerType: doc.ownerType,
         employmentType: doc.employmentType,
@@ -279,59 +206,93 @@ async function seedStudentLoanProduct() {
     });
 
     if (existing) {
-      await prisma.loanRequiredDocument.update({
-        where: {
-          id: existing.id,
-        },
-        data: {
-          isMandatory: doc.isMandatory,
-        },
-      });
+      if (existing.isMandatory !== doc.isMandatory) {
+        await prisma.loanRequiredDocument.update({
+          where: { id: existing.id },
+          data: { isMandatory: doc.isMandatory },
+        });
+      }
     } else {
       await prisma.loanRequiredDocument.create({
-        data: {
-          loanTypeId: loanType.id,
-          ...doc,
-        },
+        data: { loanTypeId, ...doc },
       });
     }
   }
 
-  console.log("✅ Student Loan product seeded successfully (isActive=false)");
+  /*
+   * Remove requirements that are no longer part of the product
+   * (for example previously seeded Student PAN or Address Proof).
+   * Uploaded documents are never touched - only the requirement
+   * definition is withdrawn.
+   */
+  const canonicalKeys = new Set(
+    canonical.map(
+      (doc) =>
+        `${doc.ownerType}:${doc.documentType}:${doc.employmentType ?? "ANY"}`,
+    ),
+  );
+
+  const configured = await prisma.loanRequiredDocument.findMany({
+    where: { loanTypeId },
+  });
+
+  const obsolete = configured.filter(
+    (doc) =>
+      !canonicalKeys.has(
+        `${doc.ownerType}:${doc.documentType}:${doc.employmentType ?? "ANY"}`,
+      ),
+  );
+
+  if (obsolete.length > 0) {
+    await prisma.loanRequiredDocument.deleteMany({
+      where: { id: { in: obsolete.map((doc) => doc.id) } },
+    });
+
+    console.log(
+      `🧹 Removed ${obsolete.length} obsolete document requirement(s): ${obsolete
+        .map((doc) => `${doc.ownerType}:${doc.documentType}`)
+        .join(", ")}`,
+    );
+  }
+
+  console.log(`✅ ${canonical.length} canonical document requirements in place`);
 }
 
 async function seedSchoolStudentLoanProduct() {
   console.log("🌱 Seeding School Student Loan product...");
 
   const loanType = await prisma.loanType.upsert({
-    where: {
-      code: "SCHOOL_STUDENT_LOAN",
-    },
+    where: { code: SCHOOL_STUDENT_LOAN_CODE },
     update: {
       name: "School Student Loan",
       description:
         "Finance tuition and other school costs for students in Class 1 to Class 12.",
       isActive: true,
-      displayOrder: 2,
+      displayOrder: 1,
+      isDeleted: false,
     },
     create: {
       name: "School Student Loan",
-      code: "SCHOOL_STUDENT_LOAN",
+      code: SCHOOL_STUDENT_LOAN_CODE,
       description:
         "Finance tuition and other school costs for students in Class 1 to Class 12.",
       category: "UNSECURED",
-      displayOrder: 2,
+      displayOrder: 1,
       isActive: true,
     },
   });
 
-  const existingConfig = await prisma.loanInterestConfiguration.findFirst({
-    where: {
-      loanTypeId: loanType.id,
-    },
+  /*
+   * Pricing: seed exactly ONE initial version, and only when the
+   * product has no configuration at all. Re-running the seed must
+   * never create a second version or silently reprice live loans -
+   * pricing changes go through the admin "create new version" flow.
+   */
+  const existingConfigCount = await prisma.loanInterestConfiguration.count({
+    where: { loanTypeId: loanType.id, isDeleted: false },
   });
 
-  if (!existingConfig) {
+  if (existingConfigCount === 0) {
     await prisma.loanInterestConfiguration.create({
       data: {
         loanTypeId: loanType.id,
@@ -344,19 +305,26 @@ async function seedSchoolStudentLoanProduct() {
         processingFeeType: "PERCENTAGE",
         gstPercentage: 18,
         latePenalty: 250,
+        foreclosureCharge: 0,
+        effectiveFrom: new Date(),
+        effectiveTo: null,
         isActive: true,
       },
     });
+
+    console.log("✅ Initial pricing version created (v1)");
+  } else {
+    console.log(
+      `⏭️  Pricing untouched (${existingConfigCount} version(s) already exist)`,
+    );
   }
 
   const existingEligibility = await prisma.loanEligibility.findFirst({
-    where: {
-      loanTypeId: loanType.id,
-    },
+    where: { loanTypeId: loanType.id },
   });
 
   if (!existingEligibility) {
-    // minimumAge applies to the CO-APPLICANT (parent/guardian), not the student.
+    // Age/income apply to the CO-APPLICANT (parent/guardian), not the student.
     await prisma.loanEligibility.create({
       data: {
         loanTypeId: loanType.id,
@@ -367,149 +335,9 @@ async function seedSchoolStudentLoanProduct() {
     });
   }
 
-  const requiredDocuments = [
-    {
-      documentType: "AADHAAR_CARD",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: true,
-    },
-    {
-      documentType: "PAN_CARD",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: false,
-    },
-    {
-      documentType: "ADDRESS_PROOF",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: false,
-    },
-    {
-      documentType: "BIRTH_CERTIFICATE",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: true,
-    },
-    {
-      documentType: "PREVIOUS_CLASS_RESULT",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: false,
-    },
-    {
-      documentType: "SCHOOL_ADMISSION_PROOF",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: true,
-    },
-    {
-      documentType: "FEE_STRUCTURE",
-      ownerType: "STUDENT",
-      employmentType: null,
-      isMandatory: true,
-    },
-    ...["FATHER", "MOTHER", "GUARDIAN"].flatMap((ownerType) => [
-      {
-        documentType: "AADHAAR_CARD",
-        ownerType,
-        employmentType: null,
-        isMandatory: true,
-      },
-      {
-        documentType: "PAN_CARD",
-        ownerType,
-        employmentType: null,
-        isMandatory: true,
-      },
-      {
-        documentType: "BANK_STATEMENT",
-        ownerType,
-        employmentType: null,
-        isMandatory: true,
-      },
-      {
-        documentType: "SALARY_SLIP",
-        ownerType,
-        employmentType: "SALARIED",
-        isMandatory: true,
-      },
-      {
-        documentType: "BUSINESS_PROOF",
-        ownerType,
-        employmentType: "BUSINESS",
-        isMandatory: true,
-      },
-      {
-        documentType: "BUSINESS_REGISTRATION",
-        ownerType,
-        employmentType: "BUSINESS",
-        isMandatory: true,
-      },
-      {
-        documentType: "GST_CERTIFICATE",
-        ownerType,
-        employmentType: "BUSINESS",
-        isMandatory: false,
-      },
-      {
-        documentType: "UDYAM_CERTIFICATE",
-        ownerType,
-        employmentType: "BUSINESS",
-        isMandatory: false,
-      },
-      {
-        documentType: "LAND_RECORD",
-        ownerType,
-        employmentType: "FARMER",
-        isMandatory: true,
-      },
-      {
-        documentType: "LAND_LEASE_PROOF",
-        ownerType,
-        employmentType: "FARMER",
-        isMandatory: false,
-      },
-    ]),
-    {
-      documentType: "EXISTING_LOAN_STATEMENT",
-      ownerType: "APPLICANT",
-      employmentType: null,
-      isMandatory: false,
-    },
-  ];
+  await syncRequiredDocuments(loanType.id);
 
-  for (const doc of requiredDocuments) {
-    const existing = await prisma.loanRequiredDocument.findFirst({
-      where: {
-        loanTypeId: loanType.id,
-        documentType: doc.documentType,
-        ownerType: doc.ownerType,
-        employmentType: doc.employmentType,
-      },
-    });
-
-    if (existing) {
-      await prisma.loanRequiredDocument.update({
-        where: {
-          id: existing.id,
-        },
-        data: {
-          isMandatory: doc.isMandatory,
-        },
-      });
-    } else {
-      await prisma.loanRequiredDocument.create({
-        data: {
-          loanTypeId: loanType.id,
-          ...doc,
-        },
-      });
-    }
-  }
-
-  console.log("✅ School Student Loan product seeded successfully (isActive=true)");
+  console.log("✅ School Student Loan product seeded");
 }
 
 async function seedSampleInstitutions() {
@@ -547,9 +375,7 @@ async function seedSampleInstitutions() {
 
   for (const school of samples) {
     await prisma.institution.upsert({
-      where: {
-        schoolId: school.schoolId,
-      },
+      where: { schoolId: school.schoolId },
       update: {
         name: school.name,
         schoolType: school.schoolType,
@@ -566,27 +392,16 @@ async function seedSampleInstitutions() {
   console.log("✅ Sample institutions seeded (3 schools)");
 }
 
-async function printLoanTypeFlags() {
+async function printSummary() {
   const types = await prisma.loanType.findMany({
-    where: {
-      code: {
-        in: ["SCHOOL_STUDENT_LOAN", "STUDENT_LOAN", "EDUCATION_LOAN"],
-      },
-    },
-    select: {
-      code: true,
-      name: true,
-      isActive: true,
-    },
-    orderBy: {
-      code: "asc",
-    },
+    select: { code: true, name: true, isActive: true },
+    orderBy: { code: "asc" },
   });
 
-  console.log("📋 Loan type flags:");
+  console.log("📋 Loan products:");
   for (const type of types) {
     console.log(
-      `   ${type.code} | ${type.name} | isActive=${type.isActive}`,
+      `   ${type.isActive ? "🟢" : "⚪"} ${type.code} | ${type.name} | isActive=${type.isActive}`,
     );
   }
 }
@@ -597,11 +412,10 @@ async function main() {
 
     await seedRoles();
     await seedAdmin();
-    await seedStudentLoanProduct();
     await seedSchoolStudentLoanProduct();
-    await hideLegacyLoanTypes();
+    await deactivateLegacyLoanTypes();
     await seedSampleInstitutions();
-    await printLoanTypeFlags();
+    await printSummary();
 
     console.log("🎉 Database seeding completed");
   } catch (error) {

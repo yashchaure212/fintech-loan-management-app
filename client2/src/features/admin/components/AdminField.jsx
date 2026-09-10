@@ -1,4 +1,10 @@
-function AdminField({ label, value, emphasize = false, className = "" }) {
+function AdminField({
+  label,
+  value,
+  emphasize = false,
+  className = "",
+  hint = "",
+}) {
   const displayValue =
     value === null || value === undefined || value === "" ? "-" : value;
 
@@ -18,6 +24,10 @@ function AdminField({ label, value, emphasize = false, className = "" }) {
       >
         {displayValue}
       </p>
+
+      {hint ? (
+        <p className="mt-0.5 text-[11px] text-muted-foreground">{hint}</p>
+      ) : null}
     </div>
   );
 }

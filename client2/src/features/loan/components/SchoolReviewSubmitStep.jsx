@@ -14,9 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import StatusBadge from "@/components/common/StatusBadge";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { LoanWizardShell, LoanWizardActions } from "./LoanWizardShell";
 import { formatCurrency } from "../utils/loanFormatters";
+import {
+  HOME_OWNERSHIP_LABELS,
+  SALARY_FREQUENCY_LABELS,
+} from "../constants/loanEnums";
 
 const classLabel = (value) => value?.replace("CLASS_", "Class ") || "-";
 
@@ -283,6 +287,34 @@ function SchoolReviewSubmitStep({
                         person.employment?.agriculturalIncome,
                     )}
                   />
+
+                  {person.employment?.salaryFrequency ? (
+                    <ReviewField
+                      label="Salary frequency"
+                      value={
+                        SALARY_FREQUENCY_LABELS[
+                          person.employment.salaryFrequency
+                        ] || person.employment.salaryFrequency
+                      }
+                    />
+                  ) : null}
+
+                  {person.employment?.salaryAccountBank ? (
+                    <ReviewField
+                      label="Salary account bank"
+                      value={person.employment.salaryAccountBank}
+                    />
+                  ) : null}
+
+                  {person.homeOwnership ? (
+                    <ReviewField
+                      label="Home ownership"
+                      value={
+                        HOME_OWNERSHIP_LABELS[person.homeOwnership] ||
+                        person.homeOwnership
+                      }
+                    />
+                  ) : null}
                 </div>
               </div>
             ))}

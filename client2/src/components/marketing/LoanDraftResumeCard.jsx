@@ -1,4 +1,8 @@
-import { ArrowRight, FileText } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  FileText,
+} from "lucide-react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
@@ -44,24 +48,12 @@ function LoanDraftResumeCard() {
     skip: !shouldFetch,
   });
 
-  /*
-   * Do not show anything for:
-   * - logged-out users
-   * - non-customers
-   * - while applications are loading
-   */
   if (!shouldFetch || isLoading) {
     return null;
   }
 
   const applications = Array.isArray(data?.data) ? data.data : [];
 
-  /*
-   * Find the latest School Student Loan draft.
-   *
-   * If the customer somehow has multiple drafts,
-   * the most recently updated one is shown.
-   */
   const draft = applications
     .filter(
       (loan) =>
@@ -76,15 +68,11 @@ function LoanDraftResumeCard() {
       return bDate - aDate;
     })[0];
 
-  /*
-   * No draft = don't show the card.
-   */
   if (!draft?.id) {
     return null;
   }
 
   const currentStep = normalizeStep(draft.currentStep);
-
   const completion = getCompletionPercentage(currentStep);
 
   const stepLabels = [
@@ -100,67 +88,201 @@ function LoanDraftResumeCard() {
   const currentStepLabel = stepLabels[currentStep - 1] || "Application";
 
   return (
-    <section className="border-b border-border bg-[#eef6ff] px-3 py-3 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1440px]">
-        <div className="overflow-hidden rounded-md border border-primary/15 bg-card shadow-sm">
-          <div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
-            {/* ==========================================
-                TEXT
-            ========================================== */}
-
-            <div className="flex min-w-0 items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <FileText size={19} strokeWidth={1.8} />
-              </div>
-
-              <div className="min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-primary">
-                  Application in progress
-                </p>
-
-                <h2 className="mt-1 text-base font-bold text-foreground sm:text-lg">
-                  Complete your loan application
-                </h2>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Your School Student Loan application is saved as a draft.
-                  Continue where you left off.
-                </p>
-              </div>
+    <section className="border-b border-border bg-[#eef6ff] px-2 py-2 sm:px-4 sm:py-2.5">
+      <div className="mx-auto max-w-[1280px]">
+        <div
+          className="
+            overflow-hidden
+            rounded-md
+            border border-primary/15
+            bg-card
+            shadow-sm
+          "
+        >
+          {/* =====================================================
+              MAIN ROW
+          ===================================================== */}
+          <div
+            className="
+              flex
+              items-center
+              gap-2.5
+              px-3
+              py-2.5
+              sm:gap-3
+              sm:px-4
+              sm:py-3
+              lg:px-5
+              lg:py-3.5
+            "
+          >
+            {/* Icon */}
+            <div
+              className="
+                flex
+                h-8
+                w-8
+                shrink-0
+                items-center
+                justify-center
+                rounded-md
+                bg-primary/10
+                text-primary
+                sm:h-9
+                sm:w-9
+              "
+            >
+              <FileText
+                className="h-4 w-4 sm:h-[18px] sm:w-[18px]"
+                strokeWidth={1.8}
+              />
             </div>
 
-            {/* ==========================================
-                CONTINUE BUTTON
-            ========================================== */}
+            {/* =================================================
+                TEXT
+            ================================================= */}
+            <div className="min-w-0 flex-1">
+              {/* Desktop */}
+              <p className="hidden text-[10px] font-bold uppercase tracking-[0.08em] text-primary sm:block">
+                Application in progress
+              </p>
 
+              <h2 className="truncate text-xs font-bold text-foreground sm:mt-0.5 sm:text-sm">
+                <span className="sm:hidden">Application pending</span>
+
+                <span className="hidden sm:inline">
+                  Complete your loan application
+                </span>
+              </h2>
+
+              <p className="mt-0.5 truncate text-[10px] text-muted-foreground sm:text-xs">
+                <span className="sm:hidden">
+                  Step {currentStep} of {TOTAL_STEPS} · {completion}% complete
+                </span>
+
+                <span className="hidden sm:inline">
+                  {currentStepLabel} · Step {currentStep} of {TOTAL_STEPS}
+                </span>
+              </p>
+            </div>
+
+            {/* =================================================
+                CONTINUE BUTTON
+            ================================================= */}
             <Button
               type="button"
-              className="w-full shrink-0 sm:w-auto"
+              size="sm"
+              className="
+                h-8
+                shrink-0
+                gap-1
+                px-2.5
+                text-[10px]
+                font-bold
+                sm:h-9
+                sm:px-3.5
+                sm:text-xs
+              "
               onClick={() => navigate(`/customer/loans/${draft.id}/edit`)}
             >
-              Continue application
-              <ArrowRight size={16} />
+              <span className="sm:hidden">Continue</span>
+
+              <span className="hidden sm:inline">Continue application</span>
+
+              <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </div>
 
-          {/* ============================================
-              PROGRESS
-          ============================================ */}
+          {/* =====================================================
+    PROGRESS
+===================================================== */}
+          <div className="border-t border-border/60 px-3 py-3 sm:px-4 sm:py-3.5 lg:px-5">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-[10px] font-semibold text-muted-foreground sm:text-xs">
+                Application progress
+              </p>
 
-          <div className="border-t border-border/70 px-4 py-3 sm:px-5">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground">
-                  Step {currentStep} of {TOTAL_STEPS}: {currentStepLabel}
-                </p>
-              </div>
-
-              <p className="text-xs font-semibold text-muted-foreground">
+              <p className="text-[10px] font-bold text-primary sm:text-xs">
                 {completion}% complete
               </p>
             </div>
 
-            <Progress value={completion} className="mt-2 h-2" />
+            {/* STEP TIMELINE */}
+            <div className="hide-scrollbar overflow-x-auto pb-1">
+              <div className="flex min-w-[620px] items-start">
+                {stepLabels.map((label, index) => {
+                  const stepNumber = index + 1;
+                  const completed = stepNumber < currentStep;
+                  const current = stepNumber === currentStep;
+                  const upcoming = stepNumber > currentStep;
+
+                  return (
+                    <div key={label} className="flex flex-1 items-start">
+                      {/* STEP */}
+                      <div className="flex min-w-0 flex-col items-center">
+                        {/* Circle */}
+                        <div
+                          className={`
+                  flex h-7 w-7 shrink-0 items-center justify-center
+                  rounded-full border text-[10px] font-bold
+                  transition-all duration-300
+                  ${
+                    completed
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : current
+                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20"
+                        : "border-border bg-muted text-muted-foreground"
+                  }
+                `}
+                        >
+                          {completed ? (
+                            <CheckCircle2 className="h-4 w-4" />
+                          ) : (
+                            stepNumber
+                          )}
+                        </div>
+
+                        {/* LABEL */}
+                        <p
+                          className={`
+                  mt-2 max-w-[85px] text-center text-[9px] leading-3
+                  transition-all duration-300 sm:max-w-[110px] sm:text-[10px]
+                  ${
+                    completed || current
+                      ? "font-bold text-foreground"
+                      : "font-medium text-muted-foreground/50"
+                  }
+                `}
+                        >
+                          {label}
+                        </p>
+                      </div>
+
+                      {/* CONNECTING LINE */}
+                      {stepNumber < TOTAL_STEPS && (
+                        <div
+                          className={`
+                  mt-3.5 h-0.5 flex-1 transition-all duration-500
+                  ${stepNumber < currentStep ? "bg-primary" : "bg-border"}
+                `}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* CURRENT STEP */}
+            <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-3">
+              <p className="truncate text-[10px] font-semibold text-foreground sm:text-xs">
+                {currentStepLabel}
+              </p>
+
+              <p className="shrink-0 text-[10px] font-semibold text-muted-foreground sm:text-xs">
+                Step {currentStep} of {TOTAL_STEPS}
+              </p>
+            </div>
           </div>
         </div>
       </div>

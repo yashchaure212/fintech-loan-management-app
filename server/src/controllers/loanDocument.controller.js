@@ -95,6 +95,22 @@ export const loanDocumentController = {
     }
   },
 
+  async getChecklist(req, res, next) {
+    try {
+      const result = await loanDocumentService.getChecklist(
+        req.user.id,
+        req.params.loanApplicationId,
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getRequiredDocuments(req, res, next) {
     try {
       const result = await loanDocumentService.getRequiredDocuments(

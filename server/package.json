@@ -8,7 +8,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node prisma/seed.js",
-    "test": "node --test src/utils/emi.util.test.js src/utils/generateEmiSchedule.test.js src/utils/date.util.test.js src/validations/auth.validation.test.js"
+    "test": "node --test src/utils/emi.util.test.js src/utils/generateEmiSchedule.test.js src/utils/date.util.test.js src/validations/auth.validation.test.js src/validations/schoolLoan.validation.test.js src/services/loanCalculation.service.test.js src/services/loanRequiredDocument.service.test.js src/constants/loanProducts.test.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -28,7 +28,6 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.1",
-    "express-validator": "^7.3.2",
     "helmet": "^8.3.0",
     "hpp": "^0.2.3",
     "jsonwebtoken": "^9.0.3",

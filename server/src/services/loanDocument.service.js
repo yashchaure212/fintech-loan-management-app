@@ -267,4 +267,20 @@ export const loanDocumentService = {
 
     return loanRequiredDocumentService.resolveForApplication(loanApplicationId);
   },
+
+  /*
+   * The customer document checklist: the exact slots to render, each
+   * with its customer-facing state. This is the only list the UI
+   * should draw, and it is the same list submission validates.
+   */
+  async getChecklist(userId, loanApplicationId) {
+    const application =
+      await loanApplicationRepository.findById(loanApplicationId);
+
+    if (!application || application.userId !== userId) {
+      throw new AppError("Loan application not found", 404);
+    }
+
+    return loanRequiredDocumentService.buildChecklist(loanApplicationId);
+  },
 };

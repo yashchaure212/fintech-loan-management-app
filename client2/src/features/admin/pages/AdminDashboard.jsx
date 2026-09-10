@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import StatusBadge from "@/components/common/StatusBadge";
+import StatusBadge from "@/components/shared/StatusBadge";
 
 import { formatCurrency } from "@/features/loan/utils/loanFormatters";
 import { useGetAdminDashboardQuery } from "@/features/dashboard/dashboardApi";

@@ -25,8 +25,8 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SCHOOL_STUDENT_LOAN_CODE } from "../constants/loanEnums";
 
-const SCHOOL_STUDENT_LOAN_CODE = "SCHOOL_STUDENT_LOAN";
 
 const SCHOOL_LOAN_STEPS = [
   {

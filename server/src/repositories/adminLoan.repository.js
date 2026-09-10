@@ -13,11 +13,44 @@ function mapApplicationDocuments(application) {
 }
 
 export const adminLoanRepository = {
-  async getAllApplications({ page, limit }) {
+  async getAllApplications({ page, limit, status, search }) {
     const skip = (page - 1) * limit;
 
+    const where = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (search?.trim()) {
+      where.OR = [
+        {
+          applicationNumber: {
+            contains: search.trim(),
+            mode: "insensitive",
+          },
+        },
+        {
+          user: {
+            email: {
+              contains: search.trim(),
+              mode: "insensitive",
+            },
+          },
+        },
+        {
+          loanType: {
+            name: {
+              contains: search.trim(),
+              mode: "insensitive",
+            },
+          },
+        },
+      ];
+    }
     const [items, total] = await prisma.$transaction([
       prisma.loanApplication.findMany({
+        where,
         skip,
         take: limit,
         select: {
@@ -53,7 +86,9 @@ export const adminLoanRepository = {
           createdAt: "desc",
         },
       }),
-      prisma.loanApplication.count(),
+      prisma.loanApplication.count({
+        where, // 👈 ADD THIS
+      }),
     ]);
 
     return {
